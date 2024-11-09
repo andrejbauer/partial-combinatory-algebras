@@ -27,7 +27,7 @@ Let $A$ be a set and ${-} \cdot_A {-}$ a partial application on $A$.
 \begin{definition}
   \label{def:Expr}
   %
-  \lean{Expr.partialApplication}
+  \lean{Expr}
   \leanok
   %
   \emph{Expressions} $\Expr A \Gamma$ in context $\Gamma$ are generated inductively by:
@@ -83,7 +83,7 @@ The application $e_1 \cdot e_2$ in the third clause of the definition is formal,
     \eval{e_1 \cdot e_2}{\eta} &= (\eval{e_1} \eta) \cdot_A (\eval{e_2} \eta).
   \end{align*}
   %
-  The evaluation may be undefined. We write $\defined e \eta$ (respectively $\undefined e \eta$) when $\eval e \eta$ is defined (respectively undefined).
+  The evaluation may be undefined. We write $\exprDefined e \eta$ (respectively $\exprUndefined e \eta$) when $\eval e \eta$ is defined (respectively undefined).
 \end{definition}
 
 \begin{proposition}
@@ -93,7 +93,7 @@ The application $e_1 \cdot e_2$ in the third clause of the definition is formal,
   \lean{Expr.defined_right}
   \leanok
   %
-  If $\defined {e_1 \cdot e_2} \eta$ then $\defined {e_1} \eta$ and $\undefined {e_2} \eta$.
+  If $\exprDefined {e_1 \cdot e_2} \eta$ then $\exprDefined {e_1} \eta$ and $\exprDefined {e_2} \eta$.
 \end{proposition}
 
 \chapter{Combinatory completeness}

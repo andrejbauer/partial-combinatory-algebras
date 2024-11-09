@@ -5,3 +5,98 @@
 % If you want to split the blueprint content into several files then
 % the current file can be a simple sequence of \input. Otherwise It
 % can start with a \section or \chapter for instance.
+
+\chapter{Basic definitions}
+
+\begin{definition}
+  \label{def:PartialApplication}
+  %
+  \lean{PartialApplication}
+  \leanok
+  %
+  A \emph{partial application} on a set $A$ is a partial map ${-} \cdot_A {-} : A \times A \parto A$.
+\end{definition}
+
+Let $A$ be a set and ${-} \cdot_A {-}$ a partial application on $A$.
+
+\begin{definition}
+  \label{def:Context}
+  A \emph{context} is a finite set with decidable equality. Its elements are called \emph{variables}.
+\end{definition}
+
+\begin{definition}
+  \label{def:Expr}
+  %
+  \lean{Expr.partialApplication}
+  \leanok
+  %
+  \emph{Expressions} $\Expr A \Gamma$ in context $\Gamma$ are generated inductively by:
+  %
+  \begin{itemize}
+    \item an element $a \in A$ is an expression,
+    \item a variable $x \in \Gamma$ is an expression,
+    \item if $e_1$ and $e_2$ are expressions then $e_1 \cdot e_2$ is an expression.
+  \end{itemize}
+\end{definition}
+
+The application $e_1 \cdot e_2$ in the third clause of the definition is formal, i.e., it is just a constructor of an inductive datatype.
+%
+
+\begin{proposition}
+  \label{prop:Expr.partialApplication}
+  \uses{def:PartialApplication}
+  \uses{def:Expr}
+  %
+  \lean{Expr.partialApplication}
+  %
+  $\Expr A \Gamma$ is again a set with a partial application, which happens to be total.
+\end{proposition}
+
+
+\begin{definition}
+  \label{def:Valuation}
+  A \emph{valuation} is a map $\eta : \Gamma \to A$ which assigns values to variables in~$\Gamma$.
+  Given a valuation $\eta : \Gamma \to A$ over a context, $x \not\in \Gamma$ and $a \in A$, the
+  \emph{extension} $\extendEnv \eta x a$ is a valuation on $\Gamma + \{x\}$, defined by:
+  %
+  \begin{equation*}
+    (\extendEnv \eta x a) y =
+    \begin{cases}
+      \eta(y) &\text{if $y \in \Gamma$,}\\
+      a       &\text{if $y = x$.}
+    \end{cases}
+  \end{equation*}
+\end{definition}
+
+\begin{definition}
+  \label{def:Expr.eval}
+  %
+  \lean{Expr.eval}
+  \leanok
+  %
+  The \emph{evaluation} $\eval e \eta$ of an expression $e \in \Expr A \Gamma$ at a
+  valuation $\eta : \Gamma \to A$ is defined recursively by the clauses
+  %
+  \begin{align*}
+    \eval{a}{\eta} &= a        &&\text{if $a \in A$}\\
+    \eval{x}{\eta} &= \eta(x)  &&\text{if $x \in \Gamma$}\\
+    \eval{e_1 \cdot e_2}{\eta} &= (\eval{e_1} \eta) \cdot_A (\eval{e_2} \eta).
+  \end{align*}
+  %
+  The evaluation may be undefined. We write $\defined e \eta$ (respectively $\undefined e \eta$) when $\eval e \eta$ is defined (respectively undefined).
+\end{definition}
+
+\begin{proposition}
+  \label{prop:Expr.defined}
+  %
+  \lean{Expr.defined_left}
+  \lean{Expr.defined_right}
+  \leanok
+  %
+  If $\defined {e_1 \cdot e_2} \eta$ then $\defined {e_1} \eta$ and $\undefined {e_2} \eta$.
+\end{proposition}
+
+\chapter{Combinatory completeness}
+
+
+\chapter{Programming with PCAs}

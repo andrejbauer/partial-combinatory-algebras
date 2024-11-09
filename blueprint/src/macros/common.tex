@@ -16,3 +16,13 @@
 
 \theoremstyle{definition}
 \newtheorem{definition}[theorem]{Definition}
+
+\newcommand{\parto}{\rightharpoonup} % partial application
+\newcommand{\Expr}[2]{\mathsf{Expr}\,#1\,#2} % expressions in a context
+
+\newcommand{\emptyEnv}{\emptyset} % empty environment
+\newcommand{\extendEnv}[3]{#1[#2 \mapsto #3]} % the extension of an environment
+
+\newcommand{\eval}[2]{[\![ #1 ]\!] \, #2} % evaluation of an expression in a context
+\newcommand{\defined}[2]{#1\,{\downarrow}_\eta}
+\newcommand{\undefined}[2]{#1\,{\uparrow}_\eta}

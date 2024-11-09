@@ -7,4 +7,4 @@ A [Lean 4](https://lean-lang.org) formalization of [partial combinatory algebras
 Further information is available at the [project web pages](https://andrejbauer.github.io/partial-combinatory-algebras/):
 
 * [blueprint](https://andrejbauer.github.io/partial-combinatory-algebras/blueprint/)
-* [documentation] (https://andrejbauer.github.io/partial-combinatory-algebras/docs/)
+* [documentation](https://andrejbauer.github.io/partial-combinatory-algebras/docs/)

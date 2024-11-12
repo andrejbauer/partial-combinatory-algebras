@@ -1,13 +1,36 @@
 import Mathlib.Data.Part
 
-/-- A notation for definedness of a partial element. -/
+/-!
+# Partial combinatory algebras
+
+A partial combinatory algebra is a set equipped with a partial binary operation,
+which has the so-called combinators `K` and `S`. We formalize it in two stages.
+
+We first defined the class `PartialApplication` which equips a given set `A` with
+a partial binary operation. One might expect such an operation to have type
+`A → A → Part A`, but this leads to complications because it is not composable.
+So instead we specify that a partial operation is a map of type `Part A → Part A → Part A`
+which is strict: if an application is defined then so are its arguments. In other
+words, we *always* work with partial elements, and separately state that they are
+total as necessary.
+
+We then define the class `PCA` (partial combinatory algebra) to be an extension of
+`PartialApplication`. It prescribed combinators `K` and `S` satisfying the usual properties.
+Following our strategy, `K` and `S` are again partial elements on the carrier set,
+with a separate claim that they are total.
+
+-/
+
+/-- A notation for definedness of a partial element (we find writing `x.Dom` a bit silly). -/
 notation:50 u:max " ⇓ " => Part.Dom u
 
 /-- A partial binary operation on a set. -/
 class PartialApplication (A : Type*) where
-  /-- partial application -/
+  /-- Partial application -/
   app : Part A → Part A → Part A
+  /-- Partial application is strict in the left argument -/
   strict_left : ∀ {u v : Part A}, (app u v) ⇓ → u ⇓
+  /-- Partial application is strict in the right argument -/
   strict_right : ∀ {u v : Part A}, (app u v) ⇓ → v ⇓
 
 @[inherit_doc]
@@ -25,22 +48,17 @@ class PCA (A : Type*) extends PartialApplication A where
   eq_K : ∀ (u v : Part A), u ⇓ → v ⇓ → (K ⬝ u ⬝ v) = u
   eq_S : ∀ (u v w : Part A), u ⇓ → v ⇓ → w ⇓ → S ⬝ u ⬝ v ⬝ w = (u ⬝ w) ⬝ (v ⬝ w)
 
-namespace PCA
+/-! `Expr Γ A` is the type of expressions built inductively from
+    constants `K` and `S`, variables in `Γ` (the variable context),
+    the elements of a carrier set `A`, and formal binary application.
 
-variable {A : Type*} [PCA A]
+    The usual accounts of PCAs typically do not introduce `K` and `S`
+    as separate constants, because a PCA `A` already contains such combinators.
+    However, as we defined the combinators to be partial elements, it is more
+    convenient to have separate primitive constants denoting them.
+-/
 
-@[reducible]
-def I : Part A := S ⬝ K ⬝ K
-
-lemma defined_I : (I : Part A) ⇓ := by
-  apply defined_S₂ <;> apply defined_K₀
-
-lemma eq_I {u : Part A} : u ⇓ → I ⬝ u = u := by
-  intro du
-  simp [I, eq_S, eq_K, defined_K₀, defined_K₁, du]
-
-end PCA
-
+/-- Expressions with variables from context `Γ` and elements from `A`. -/
 inductive Expr (Γ A : Type*) where
 | K : Expr Γ A
 | S : Expr Γ A
@@ -48,28 +66,33 @@ inductive Expr (Γ A : Type*) where
 | var : Γ → Expr Γ A
 | app : Expr Γ A → Expr Γ A → Expr Γ A
 
-inductive Extend (Γ : Type*) where
-| here : Extend Γ
-| there : Γ → Extend Γ
-
-def extend {Γ A : Type} (η : Γ → A) (a : A) : Extend Γ → A
-| .here => a
-| .there x => η x
-
 namespace Expr
+  /-- A set `Γ` (of variables) extended by one more variable. -/
+  inductive Extend (Γ : Type*) where
+    /-- The additional variable. -/
+  | here : Extend Γ
+    /-- The original variable -/
+  | there : Γ → Extend Γ
 
-  /-- The evaluation of an expression with respect to a partial application
-      and valuation of the variables. -/
-  def eval {Γ A} [PCA A]: Expr Γ A → (Γ → A) → Part A
-  | .K, _ => PCA.K
-  | .S, _ => PCA.S
-  | .elm a, _ => .some a
-  | .var x, η => .some (η x)
-  | .app e₁ e₂, η => (eval e₁ η) ⬝ (eval e₂ η)
+  /-- A valuation `η : Γ → A` assigning elements to variables,
+      extended by one more variable and its value. -/
+  def extend {Γ A : Type} (η : Γ → A) (a : A) : Extend Γ → A
+  | .here => a
+  | .there x => η x
 
+  /-- Evaluate an expression with respect to a given valuation `η`. -/
+  def eval {Γ A} [PCA A] (η : Γ → A): Expr Γ A → Part A
+  | .K => PCA.K
+  | .S => PCA.S
+  | .elm a => .some a
+  | .var x => .some (η x)
+  | .app e₁ e₂ => (eval η e₁) ⬝ (eval η e₂)
+
+  /-- An expression is said to be defined when it is defined at every valuation. -/
   def defined {Γ A} [PCA A] (e : Expr Γ A) :=
-    ∀ (η : Γ → A), (eval e η) ⇓
+    ∀ (η : Γ → A), (eval η e) ⇓
 
+  /-- The substitution of an element for the extra variable. -/
   def subst {Γ A} [PCA A] (a : A) : Expr (Extend Γ) A → Expr Γ A
   | .K => .K
   | .S => .S
@@ -78,6 +101,10 @@ namespace Expr
   | .var (.there x) => .var x
   | .app e₁ e₂ => .app (subst a e₁) (subst a e₂)
 
+  /-- `abstr e` is an expression with one fewer variables than
+      the expression `e`, which works similarly to function
+      abastraction in the λ-calculus. It is at the heart of
+      combinatory completeness. -/
   def abstr {Γ A} [PCA A] : Expr (Extend Γ) A → Expr Γ A
   | .K => .app .K .K
   | .S => .app .K .S
@@ -86,6 +113,7 @@ namespace Expr
   | .var (.there x) => .app .K (.var x)
   | .app e₁ e₂ => .app (.app .S (abstr e₁)) (abstr e₂)
 
+  /-- An abstraction is defined. -/
   lemma defined_abstr {Γ A} [PCA A] (e : Expr (Extend Γ) A) : defined (abstr e) := by
     intro η
     induction e
@@ -98,8 +126,10 @@ namespace Expr
       case there => simp [eval, PCA.defined_K₁]
     case app e₁ e₂ ih₁ ih₂ => simp [eval, PCA.defined_S₂, ih₁, ih₂]
 
-  lemma unnecessary_lemma {Γ A} [PCA A] (e : Expr (Extend Γ) A) :
-    ∀ (a : A) (η : Γ → A), eval (subst a e) η = eval e (extend η a) := by
+  /-- Evaluating after substitution is equivalent to evaluating at
+      and extended valuation. -/
+  lemma eval_subst {Γ A} [PCA A] (e : Expr (Extend Γ) A) :
+    ∀ (a : A) (η : Γ → A), eval η (subst a e) = eval (extend η a) e := by
     intro a η
     induction e
     case K => simp [subst, eval]
@@ -111,9 +141,10 @@ namespace Expr
       case there x => simp [subst, eval, extend]
     case app e₁ e₂ ih₁ ih₂ => simp [subst, eval, ih₁, ih₂]
 
-  lemma eq_abstr {Γ A} [PCA A] (e : Expr (Extend Γ) A) :
-    ∀ (a : A) (η : Γ → A), eval (.app (abstr e) (.elm a)) η = eval e (extend η a) := by
-    intro a η
+  /-- `abstr e` behaves like abstraction in the extra variable.
+      This is known as *combinatory completeness* -/
+  lemma eq_abstr {Γ A} [PCA A] (e : Expr (Extend Γ) A) (a : A) (η : Γ → A):
+    eval η (.app (abstr e) (.elm a)) = eval (extend η a) e := by
     induction e
     case K => simp [eval, PCA.eq_K, PCA.defined_K₀]
     case S => simp [eval, PCA.eq_K, PCA.defined_S₀]
@@ -126,5 +157,4 @@ namespace Expr
       simp [abstr, eval] at ih₁
       simp [abstr, eval] at ih₂
       simp [abstr, eval, PCA.eq_S, defined_abstr _ η, ih₁, ih₂]
-
 end Expr

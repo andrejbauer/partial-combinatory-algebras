@@ -6,7 +6,9 @@
 % the current file can be a simple sequence of \input. Otherwise It
 % can start with a \section or \chapter for instance.
 
-\chapter{Basic definitions}
+\section{Basic definitions}
+
+Given a possibly undefined expression or a partial element, we write $\defined{e}$ to indicate that the element is defined.
 
 \begin{definition}
   \label{def:PartialApplication}
@@ -17,12 +19,26 @@
   A \emph{partial application} on a set $A$ is a partial map ${-} \cdot_A {-} : A \times A \parto A$.
 \end{definition}
 
-Let $A$ be a set and ${-} \cdot_A {-}$ a partial application on $A$.
-
 \begin{definition}
-  \label{def:Context}
-  A \emph{context} is a finite set with decidable equality. Its elements are called \emph{variables}.
+  \label{def:PCA}
+  %
+  \lean{PCA}
+  \uses{PartialApplication}
+  %
+  A set $A$ with a partial map ${-} \cdot {-}$ is a \emph{partial combinatory algebra (PCA)} if there are
+  elements $\combK, \combS \in A$ such that, for all $a, b, c \in A$:
+  %
+  \begin{align*}
+    &\defined{\combK \cdot a}, &
+    &\combK \cdot a \cdot b = a \\
+    &\defined{\combS \cdot a \cdot b}, &
+    &\combS \cdot a \cdot b \cdot c = (a \cdot c) \cdot (b \cdot c).
+  \end{align*}
 \end{definition}
+
+
+\section{Combinatory completeness}
+
 
 \begin{definition}
   \label{def:Expr}
@@ -30,7 +46,8 @@ Let $A$ be a set and ${-} \cdot_A {-}$ a partial application on $A$.
   \lean{Expr}
   \leanok
   %
-  \emph{Expressions} $\Expr A \Gamma$ in context $\Gamma$ are generated inductively by:
+  Given a set $\Gamma$ of \emph{variables} and a set $A$ of elements, the
+  \emph{expressions} $\Expr \Gamma A$ are generated inductively by the following clauses:
   %
   \begin{itemize}
     \item an element $a \in A$ is an expression,
@@ -39,22 +56,14 @@ Let $A$ be a set and ${-} \cdot_A {-}$ a partial application on $A$.
   \end{itemize}
 \end{definition}
 
+\noindent
 The application $e_1 \cdot e_2$ in the third clause of the definition is formal, i.e., it is just a constructor of an inductive datatype.
-%
-
-\begin{proposition}
-  \label{prop:Expr.partialApplication}
-  \uses{def:PartialApplication}
-  \uses{def:Expr}
-  %
-  \lean{Expr.partialApplication}
-  %
-  $\Expr A \Gamma$ is again a set with a partial application, which happens to be total.
-\end{proposition}
-
 
 \begin{definition}
-  \label{def:Valuation}
+  \label{def:Valuation}%
+  \lean{Expr.Extend}
+  \lean{Expr.extend}
+  %
   A \emph{valuation} is a map $\eta : \Gamma \to A$ which assigns values to variables in~$\Gamma$.
   Given a valuation $\eta : \Gamma \to A$ over a context, $x \not\in \Gamma$ and $a \in A$, the
   \emph{extension} $\extendEnv \eta x a$ is a valuation on $\Gamma + \{x\}$, defined by:
@@ -73,8 +82,10 @@ The application $e_1 \cdot e_2$ in the third clause of the definition is formal,
   %
   \lean{Expr.eval}
   \leanok
+  \uses{Valuation}
+  \uses{Expr}
   %
-  The \emph{evaluation} $\eval e \eta$ of an expression $e \in \Expr A \Gamma$ at a
+  The \emph{evaluation} $\eval e \eta$ of an expression $e \in \Expr \Gamma A$ at a
   valuation $\eta : \Gamma \to A$ is defined recursively by the clauses
   %
   \begin{align*}
@@ -83,20 +94,76 @@ The application $e_1 \cdot e_2$ in the third clause of the definition is formal,
     \eval{e_1 \cdot e_2}{\eta} &= (\eval{e_1} \eta) \cdot_A (\eval{e_2} \eta).
   \end{align*}
   %
-  The evaluation may be undefined. We write $\exprDefined e \eta$ (respectively $\exprUndefined e \eta$) when $\eval e \eta$ is defined (respectively undefined).
+  The evaluation may be undefined.
 \end{definition}
 
-\begin{proposition}
-  \label{prop:Expr.defined}
+\begin{definition}
+  \label{def:Expr.defined}
   %
-  \lean{Expr.defined_left}
-  \lean{Expr.defined_right}
+  \lean{Expr.defined}
   \leanok
+  \uses{Expr}
+  \uses{Expr.eval}
   %
-  If $\exprDefined {e_1 \cdot e_2} \eta$ then $\exprDefined {e_1} \eta$ and $\exprDefined {e_2} \eta$.
+  An expression $e \in \Expr \Gamma A$ is \emph{defined} when $\defined{\eval{e}{\eta}}$
+  for all $\eta : \Gamma \to A$.
+\end{definition}
+
+
+\begin{definition}
+  \label{def:Expr.abstr}
+  %
+  \lean{Expr.abstr}
+  %
+  Let $x \not\in \Gamma$,
+  The \emph{abstraction} of an expression $e \in \Expr {(\Gamma \cup \{x\})} A$ 
+  is the expression $\abstr{x} e \in \Expr \Gamma A$ defined recursively:
+  %
+  \begin{align*}
+    \abstr{x} x &= \combS \cdot \combK \cdot \combK, \\
+    \abstr{x} y &= \combK \cdot y &&\text{if $x \neq y \in \Gamma$}, \\
+    \abstr{x} a &= \combK \cdot a &&\text{if $a \in A$}, \\
+    \abstr{x} (e_1 \cdot e_2) &= \combS \cdot (\abstr{x} e_1) \cdot (\abstr{x} e_2).
+  \end{align*}
+\end{definition}
+
+
+\begin{proposition}
+  \label{prop:Expr.defined_abstr}
+  %
+  \lean{Expr.defined_abstr}
+  \uses{Expr.defined}
+  \uses{Expr.abstr}
+  %
+  An abstraction $\abstr{x} e$ is defined.
 \end{proposition}
 
-\chapter{Combinatory completeness}
+\begin{proposition}
+  \label{prop:Expr.eq_abstr}
+  %
+  \lean{Expr.eq_abstr}
+  \lean{Expr.eval}
+  \lean{Expr.abstr}
+  %
+  Let $x \not\in \Gamma$ and $e \in \Expr {(\Gamma \cup \{x\})} A$.
+  Then for every $a \in A$ and $\eta : \Gamma \to A$
+  %
+  \begin{equation*}
+    \eval{(\abstr{x} e) \cdot a}{\eta} =
+    \eval{e}{\extendEnv{\eta}{x}{a}}.
+  \end{equation*}
+\end{proposition}
 
 
-\chapter{Programming with PCAs}
+\section{Programming with PCAs}
+
+TODO
+
+\section{Examples of PCAs}
+
+TODO
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "print"
+%%% End:

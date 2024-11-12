@@ -9,7 +9,7 @@
 % (this is what the [theorem] arguments mean) and never resets it.
 % If you want for instance to number them within chapters then you can add
 % [chapter] at the end of the next line.
-\newtheorem{theorem}{Theorem}
+\newtheorem{theorem}{Theorem}[section]
 \newtheorem{proposition}[theorem]{Proposition}
 \newtheorem{lemma}[theorem]{Lemma}
 \newtheorem{corollary}[theorem]{Corollary}
@@ -18,11 +18,15 @@
 \newtheorem{definition}[theorem]{Definition}
 
 \newcommand{\parto}{\rightharpoonup} % partial application
+\newcommand{\combK}{\mathsf{K}} % combinator K
+\newcommand{\combS}{\mathsf{S}} % combinator S
+
 \newcommand{\Expr}[2]{\mathsf{Expr}\,#1\,#2} % expressions in a context
 
 \newcommand{\emptyEnv}{\emptyset} % empty environment
 \newcommand{\extendEnv}[3]{#1[#2 \mapsto #3]} % the extension of an environment
 
 \newcommand{\eval}[2]{[\![ #1 ]\!] \, #2} % evaluation of an expression in a context
-\newcommand{\exprDefined}[2]{#1\,{\downarrow}_\eta}
-\newcommand{\exprUndefined}[2]{#1\,{\uparrow}_\eta}
+\newcommand{\defined}[1]{#1\,{\Downarrow}}
+
+\newcommand{\abstr}[1]{\langle #1 \rangle\,} % abstraction

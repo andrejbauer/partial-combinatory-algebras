@@ -22,6 +22,7 @@ Given a possibly undefined expression or a partial element, we write $\defined{e
 \begin{definition}
   \label{def:PCA}
   %
+  \leanok
   \lean{PCA}
   \uses{def:partial-application}
   %
@@ -43,13 +44,14 @@ Given a possibly undefined expression or a partial element, we write $\defined{e
 \begin{definition}
   \label{def:expression}
   %
-  \lean{Expr}
   \leanok
+  \lean{Expr}
   %
   Given a set $\Gamma$ of \emph{variables} and a set $A$ of elements, the
   \emph{expressions} $\Expr \Gamma A$ are generated inductively by the following clauses:
   %
   \begin{itemize}
+    \item the constants $\mathtt{K}$ and $\mathtt{S}$ are expressions,
     \item an element $a \in A$ is an expression,
     \item a variable $x \in \Gamma$ is an expression,
     \item if $e_1$ and $e_2$ are expressions then $e_1 \cdot e_2$ is an expression.
@@ -61,6 +63,7 @@ The application $e_1 \cdot e_2$ in the third clause of the definition is formal,
 
 \begin{definition}
   \label{def:extension}%
+  \leanok
   \lean{Expr.Extend}
   \lean{Expr.extend}
   %
@@ -80,14 +83,18 @@ The application $e_1 \cdot e_2$ in the third clause of the definition is formal,
 \begin{definition}
   \label{def:evaluation}
   %
-  \lean{Expr.eval}
   \leanok
-  \uses{def:expression}
+  \lean{Expr.eval}
   %
-  The \emph{evaluation} $\eval e \eta$ of an expression $e \in \Expr \Gamma A$ at a
+  \uses{def:expression}
+  \uses{def:PCA}
+  %
+  The \emph{evaluation} $\eval e \eta$ of an expression $e \in \Expr \Gamma A$ in a PCA~$A$ at a
   valuation $\eta : \Gamma \to A$ is defined recursively by the clauses
   %
   \begin{align*}
+    \eval{\mathtt{K}}{\eta} &= \combK \\
+    \eval{\\mathtt{S}}{\eta} &= \combK \\
     \eval{a}{\eta} &= a        &&\text{if $a \in A$}\\
     \eval{x}{\eta} &= \eta(x)  &&\text{if $x \in \Gamma$}\\
     \eval{e_1 \cdot e_2}{\eta} &= (\eval{e_1} \eta) \cdot_A (\eval{e_2} \eta).
@@ -99,8 +106,8 @@ The application $e_1 \cdot e_2$ in the third clause of the definition is formal,
 \begin{definition}
   \label{def:expression-defined}
   %
-  \lean{Expr.defined}
   \leanok
+  \lean{Expr.defined}
   \uses{def:expression}
   \uses{def:evaluation}
   %
@@ -112,6 +119,7 @@ The application $e_1 \cdot e_2$ in the third clause of the definition is formal,
 \begin{definition}
   \label{def:abstraction}
   %
+  \leanok
   \lean{Expr.abstr}
   \uses{def:expression}
   \uses{def:extension}
@@ -132,6 +140,7 @@ The application $e_1 \cdot e_2$ in the third clause of the definition is formal,
 \begin{proposition}
   \label{prop:abstraction-defined}
   %
+  \leanok
   \lean{Expr.defined_abstr}
   \uses{def:expression-defined}
   \uses{def:abstraction}
@@ -142,6 +151,7 @@ The application $e_1 \cdot e_2$ in the third clause of the definition is formal,
 \begin{proposition}
   \label{prop:abstraction-equal}
   %
+  \leanok
   \lean{Expr.eq_abstr}
   \uses{def:expression}
   \uses{def:evaluation}

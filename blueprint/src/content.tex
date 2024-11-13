@@ -6,9 +6,18 @@
 % the current file can be a simple sequence of \input. Otherwise It
 % can start with a \section or \chapter for instance.
 
+\begin{abstract}
+  We outline a plan of formalization for partial combinatory algebras (PCA), including combinatory completeness,
+  programming with PCAs, and some examples of PCAs. Time permitting, we will formalize the typed version as well.
+\end{abstract}
+
+
+This blueprint, and more generally the \href{https://github.com/andrejbauer/partial-combinatory-algebras}{\texttt{partial-combinatory-algebras}} Lean project, is part of the teaching materials for the course \href{https://www.andrej.com/zapiski/MAT-FORMATH-2024/book/}{Formalized mathematics and proof assistants}.
+It serves as a model blueprint to help students create their own class project blueprints.
+
 \section{Basic definitions}
 
-Given a possibly undefined expression or a partial element, we write $\defined{e}$ to indicate that the element is defined.
+Given a possibly undefined expression or an element of a set, we write $\defined{e}$ to indicate that the element is defined.
 
 \begin{definition}
   \label{def:partial-application}
@@ -37,6 +46,7 @@ Given a possibly undefined expression or a partial element, we write $\defined{e
   \end{align*}
 \end{definition}
 
+We also write $a \, b$ for $a \cdot b$ and we associate application to the left.
 
 \section{Combinatory completeness}
 
@@ -61,15 +71,24 @@ Given a possibly undefined expression or a partial element, we write $\defined{e
 \noindent
 The application $e_1 \cdot e_2$ in the third clause of the definition is formal, i.e., it is just a constructor of an inductive datatype.
 
+Given a set of variables $\Gamma$ and a set~$A$, a \emph{valuation} is a map $\eta : \Gamma \to A$ which assigns elements to variables.
+
 \begin{definition}
   \label{def:extension}%
   \leanok
   \lean{Expr.Extend}
+  %
+  A set (context) $\Gamma$ may be \emph{extended} with a variable $x \not\in \Gamma$ to
+  a context $\extendCtx \Gamma x$ with one more variable.
+\end{definition}
+
+\begin{definition}
+  \label{def:extension}%
+  \leanok
   \lean{Expr.extend}
   %
-  A \emph{valuation} is a map $\eta : \Gamma \to A$ which assigns values to variables in~$\Gamma$.
-  Given a valuation $\eta : \Gamma \to A$ over a context, $x \not\in \Gamma$ and $a \in A$, the
-  \emph{extension} $\extendEnv \eta x a$ is a valuation on $\Gamma + \{x\}$, defined by:
+  Given a valuation $\eta : \Gamma \to A$ and $a \in A$, the
+  \emph{extension} $\extendEnv \eta x a$ is a valuation $\extendCtx \Gamma x$, defined by:
   %
   \begin{equation*}
     (\extendEnv \eta x a) y =
@@ -86,8 +105,7 @@ The application $e_1 \cdot e_2$ in the third clause of the definition is formal,
   \leanok
   \lean{Expr.eval}
   %
-  \uses{def:expression}
-  \uses{def:PCA}
+  \uses{def:expression, def:PCA}
   %
   The \emph{evaluation} $\eval e \eta$ of an expression $e \in \Expr \Gamma A$ in a PCA~$A$ at a
   valuation $\eta : \Gamma \to A$ is defined recursively by the clauses
@@ -108,8 +126,7 @@ The application $e_1 \cdot e_2$ in the third clause of the definition is formal,
   %
   \leanok
   \lean{Expr.defined}
-  \uses{def:expression}
-  \uses{def:evaluation}
+  \uses{def:expression, def:evaluation}
   %
   An expression $e \in \Expr \Gamma A$ is \emph{defined} when $\defined{\eval{e}{\eta}}$
   for all $\eta : \Gamma \to A$.
@@ -121,11 +138,10 @@ The application $e_1 \cdot e_2$ in the third clause of the definition is formal,
   %
   \leanok
   \lean{Expr.abstr}
-  \uses{def:expression}
-  \uses{def:extension}
+  \uses{def:expression, def:extension}
   %
   Let $x \not\in \Gamma$,
-  The \emph{abstraction} of an expression $e \in \Expr {(\Gamma \cup \{x\})} A$ 
+  The \emph{abstraction} of an expression $e \in \Expr {(\extendCtx \Gamma x)} A$ 
   is the expression $\abstr{x} e \in \Expr \Gamma A$ defined recursively:
   %
   \begin{align*}
@@ -142,20 +158,22 @@ The application $e_1 \cdot e_2$ in the third clause of the definition is formal,
   %
   \leanok
   \lean{Expr.defined_abstr}
-  \uses{def:expression-defined}
-  \uses{def:abstraction}
+  \uses{def:expression-defined, def:abstraction}
   %
   An abstraction $\abstr{x} e$ is defined.
 \end{proposition}
+
+\begin{proof}
+  \leanok
+  By straightforward structural induction on~$e$.
+\end{proof}
 
 \begin{proposition}
   \label{prop:abstraction-equal}
   %
   \leanok
   \lean{Expr.eq_abstr}
-  \uses{def:expression}
-  \uses{def:evaluation}
-  \uses{def:abstraction}
+  \uses{def:expression, def:evaluation, def:abstraction}
   %
   Let $x \not\in \Gamma$ and $e \in \Expr {(\Gamma \cup \{x\})} A$.
   Then for every $a \in A$ and $\eta : \Gamma \to A$
@@ -166,10 +184,60 @@ The application $e_1 \cdot e_2$ in the third clause of the definition is formal,
   \end{equation*}
 \end{proposition}
 
+\begin{proof}
+  \leanok
+  By straightforward structural induction on~$e$.
+\end{proof}
 
 \section{Programming with PCAs}
 
-TODO
+Let $A$ be a PCA.
+
+\begin{definition}
+  \label{def:combinator-I}
+  \lean{PCA.I}
+  %
+  The \emph{identity combinator} is $\comb{I} = \combS \, \combK \, \combK$.
+\end{definition}
+
+\begin{proposition}
+  \label{prop:equal-I}
+  \lean{PCA.equal_I}
+  \uses{def:combinator-I}
+  %
+  For all $a \in A$. $I \, a = a$.
+\end{proposition}
+
+\begin{definition}
+  \label{def:combinator-Pair}
+  \lean{PCA.Pair}
+  %
+  The \emph{pairing combinator} is $\comb{pair} = \abstr{x} \abstr{y} \abstr{z} z \, x, y$.
+\end{definition}
+
+\begin{definition}
+  \label{def:combinator-Fst}
+  \lean{PCA.fst}
+  %
+  The \emph{first projection} is $\comb{fst} = \abstr{x} \abstr{y} x$.
+\end{definition}
+
+\begin{definition}
+  \label{def:combinator-Snd}
+  \lean{PCA.snd}
+  %
+  The \emph{second projection} is $\comb{snd} = \abstr{x} \abstr{y} y$.
+\end{definition}
+
+\begin{proposition}
+  \label{prop:equal-Pair}
+  \lean{PCA.equal_Pair}
+  \uses{def:combinator-Pair, combinator-Fst, combinator-Snd}
+  %
+  For all $a, b \in A$, $\comb{fst} \, (\comb{pair} \, a \, b) = a$ and $\comb{snd} \, (\comb{pair} \, a \, b) = b$.
+\end{proposition}
+
+TODO: booleans, numbers, fixpoint combinator, primitive recursion, minimization.
 
 \section{Examples of PCAs}
 

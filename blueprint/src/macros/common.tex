@@ -18,12 +18,14 @@
 \newtheorem{definition}[theorem]{Definition}
 
 \newcommand{\parto}{\rightharpoonup} % partial application
-\newcommand{\combK}{\mathsf{K}} % combinator K
-\newcommand{\combS}{\mathsf{S}} % combinator S
+
+\newcommand{\comb}[1]{\mathsf{#1}} % combinator
+\newcommand{\combK}{\comb{K}} % combinator K
+\newcommand{\combS}{\comb{S}} % combinator S
 
 \newcommand{\Expr}[2]{\mathsf{Expr}\,#1\,#2} % expressions in a context
 
-\newcommand{\emptyEnv}{\emptyset} % empty environment
+\newcommand{\extendCtx}[2]{#1 + \{#2\}} % the extension of a context
 \newcommand{\extendEnv}[3]{#1[#2 \mapsto #3]} % the extension of an environment
 
 \newcommand{\eval}[2]{[\![ #1 ]\!] \, #2} % evaluation of an expression in a context

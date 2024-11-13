@@ -209,8 +209,8 @@ Let $A$ be a PCA.
 \end{proposition}
 
 \begin{definition}
-  \label{def:combinator-Pair}
-  \lean{PCA.Pair}
+  \label{def:combinator-pair}
+  \lean{PCA.pair}
   %
   The \emph{pairing combinator} is $\comb{pair} = \abstr{x} \abstr{y} \abstr{z} z \, x, y$.
 \end{definition}
@@ -231,8 +231,8 @@ Let $A$ be a PCA.
 
 \begin{proposition}
   \label{prop:equal-Pair}
-  \lean{PCA.equal_Pair}
-  \uses{def:combinator-Pair, def:combinator-fst, def:combinator-snd}
+  \lean{PCA.equal_pair}
+  \uses{def:combinator-pair, def:combinator-fst, def:combinator-snd}
   %
   For all $a, b \in A$, $\comb{fst} \, (\comb{pair} \, a \, b) = a$ and $\comb{snd} \, (\comb{pair} \, a \, b) = b$.
 \end{proposition}

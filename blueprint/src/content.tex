@@ -216,14 +216,14 @@ Let $A$ be a PCA.
 \end{definition}
 
 \begin{definition}
-  \label{def:combinator-Fst}
+  \label{def:combinator-fst}
   \lean{PCA.fst}
   %
   The \emph{first projection} is $\comb{fst} = \abstr{x} \abstr{y} x$.
 \end{definition}
 
 \begin{definition}
-  \label{def:combinator-Snd}
+  \label{def:combinator-snd}
   \lean{PCA.snd}
   %
   The \emph{second projection} is $\comb{snd} = \abstr{x} \abstr{y} y$.
@@ -232,7 +232,7 @@ Let $A$ be a PCA.
 \begin{proposition}
   \label{prop:equal-Pair}
   \lean{PCA.equal_Pair}
-  \uses{def:combinator-Pair, combinator-Fst, combinator-Snd}
+  \uses{def:combinator-Pair, def:combinator-fst, def:combinator-snd}
   %
   For all $a, b \in A$, $\comb{fst} \, (\comb{pair} \, a \, b) = a$ and $\comb{snd} \, (\comb{pair} \, a \, b) = b$.
 \end{proposition}

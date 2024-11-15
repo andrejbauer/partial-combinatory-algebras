@@ -48,6 +48,14 @@ class PCA (A : Type*) extends PartialApplication A where
   eq_K : ∀ (u v : Part A), u ⇓ → v ⇓ → (K ⬝ u ⬝ v) = u
   eq_S : ∀ (u v w : Part A), u ⇓ → v ⇓ → w ⇓ → S ⬝ u ⬝ v ⬝ w = (u ⬝ w) ⬝ (v ⬝ w)
 
+attribute [simp] PCA.defined_K₀
+attribute [simp] PCA.defined_K₁
+attribute [simp] PCA.eq_K
+attribute [simp] PCA.defined_S₀
+attribute [simp] PCA.defined_S₁
+attribute [simp] PCA.defined_S₂
+attribute [simp] PCA.eq_S
+
 /-! `Expr Γ A` is the type of expressions built inductively from
     constants `K` and `S`, variables in `Γ` (the variable context),
     the elements of a carrier set `A`, and formal binary application.
@@ -117,14 +125,11 @@ namespace Expr
   lemma defined_abstr {Γ A} [PCA A] (e : Expr (Extend Γ) A) : defined (abstr e) := by
     intro η
     induction e
-    case K => simp [eval, PCA.defined_K₁, PCA.defined_K₀]
-    case S => simp [eval, PCA.defined_S₁, PCA.defined_K₁, PCA.defined_S₀]
-    case elm => simp [eval, PCA.defined_K₁]
-    case var x =>
-      cases x
-      case here => simp [eval, PCA.defined_S₂, PCA.defined_S₁, PCA.defined_K₀]
-      case there => simp [eval, PCA.defined_K₁]
-    case app e₁ e₂ ih₁ ih₂ => simp [eval, PCA.defined_S₂, ih₁, ih₂]
+    case K => simp [eval]
+    case S => simp [eval]
+    case elm => simp [eval]
+    case var x => cases x <;> simp [eval]
+    case app e₁ e₂ ih₁ ih₂ => simp [eval, ih₁, ih₂]
 
   /-- Evaluating after substitution is equivalent to evaluating at
       and extended valuation. -/
@@ -136,9 +141,7 @@ namespace Expr
     case S => simp [subst, eval]
     case elm => simp [subst, eval]
     case var x =>
-      cases x
-      case here => simp [subst, eval, extend]
-      case there x => simp [subst, eval, extend]
+      cases x <;> simp [subst, eval, extend]
     case app e₁ e₂ ih₁ ih₂ => simp [subst, eval, ih₁, ih₂]
 
   /-- `abstr e` behaves like abstraction in the extra variable.
@@ -146,15 +149,13 @@ namespace Expr
   lemma eq_abstr {Γ A} [PCA A] (e : Expr (Extend Γ) A) (a : A) (η : Γ → A):
     eval η (.app (abstr e) (.elm a)) = eval (extend η a) e := by
     induction e
-    case K => simp [eval, PCA.eq_K, PCA.defined_K₀]
-    case S => simp [eval, PCA.eq_K, PCA.defined_S₀]
-    case elm => simp [eval, PCA.eq_K]
+    case K => simp [eval]
+    case S => simp [eval]
+    case elm => simp [eval]
     case var x =>
-      cases x
-      case here => simp [eval, extend, PCA.eq_S, PCA.eq_K, PCA.defined_K₀, PCA.defined_K₁]
-      case there x => simp [eval, extend, PCA.eq_K]
+      cases x <;> simp [eval, extend]
     case app e₁ e₂ ih₁ ih₂ =>
       simp [abstr, eval] at ih₁
       simp [abstr, eval] at ih₂
-      simp [abstr, eval, PCA.eq_S, defined_abstr _ η, ih₁, ih₂]
+      simp [abstr, eval, defined_abstr _ η, ih₁, ih₂]
 end Expr

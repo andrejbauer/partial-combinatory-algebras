@@ -4,11 +4,17 @@ namespace PCA
 
   variable {A : Type*} [PCA A]
 
-  def I : Part A := sorry
+  def I : Part A := S ⬝ K ⬝ K
 
-  def equal_I : Part A := sorry
+  @[simp]
+  theorem equal_I (u : Part A) : u ⇓ → I ⬝ u = u := by
+    intro hu ; simp [I, hu]
 
-  def pair : Part A := sorry
+  def emptyEnv {A} := @Empty.elim A
+
+  #print emptyEnv
+
+  def pair (u v : Part A) : Part A := Expr.eval emptyEnv (Expr.abstr (.var .here))
 
   def fst : Part A := sorry
 

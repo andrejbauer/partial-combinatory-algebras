@@ -7,8 +7,13 @@ namespace PCA
   def I : Part A := S ⬝ K ⬝ K
 
   @[simp]
-  theorem equal_I (u : Part A) : u ⇓ → I ⬝ u = u := by
+  theorem equal_I {u : Part A} : u ⇓ → I ⬝ u = u := by
     intro hu ; simp [I, hu]
+
+  @[simp]
+  theorem defined_I (u : Part A) : u ⇓ → (I ⬝ u) ⇓ := by
+    intro hu
+    rw [equal_I] <;> assumption
 
   def emptyEnv {A} := @Empty.elim A
 

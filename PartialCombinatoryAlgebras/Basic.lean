@@ -24,6 +24,14 @@ with a separate claim that they are total.
 /-- A notation for definedness of a partial element (we find writing `x.Dom` a bit silly). -/
 notation:50 u:max " ⇓ " => Part.Dom u
 
+/-- A generic notation for a left-associative binary operation -/
+class HasDot (A : Type*) where
+  /-- (possibly partial) binary application -/
+  dot : A → A → A
+
+@[inherit_doc]
+infixl:70 " ⬝ " => HasDot.dot
+
 /-- A partial binary operation on a set. -/
 class PartialApplication (A : Type*) where
   /-- Partial application -/
@@ -33,8 +41,8 @@ class PartialApplication (A : Type*) where
   /-- Partial application is strict in the right argument -/
   strict_right : ∀ {u v : Part A}, (app u v) ⇓ → v ⇓
 
-@[inherit_doc]
-infixl:70 (priority := high) " ⬝ " => PartialApplication.app
+instance PartialApplication.hasDot {A : Type*} [PartialApplication A] : HasDot (Part A) where
+  dot := app
 
 /-- The partial combinatory structure on a set `A`. -/
 class PCA (A : Type*) extends PartialApplication A where
@@ -68,13 +76,22 @@ attribute [simp] PCA.eq_S
 
 /-- Expressions with variables from context `Γ` and elements from `A`. -/
 inductive Expr (Γ A : Type*) where
+  /-- Formal expression denoting the K combinator -/
 | K : Expr Γ A
+  /-- Formal expression denoting the S combinator -/
 | S : Expr Γ A
+  /-- An element as a formal expression -/
 | elm : A → Expr Γ A
+  /-- A variable as a formal expression -/
 | var : Γ → Expr Γ A
+  /-- Formal expression application -/
 | app : Expr Γ A → Expr Γ A → Expr Γ A
 
+instance Expr.hasDot {Γ A : Type*} : HasDot (Expr Γ A) where
+  dot := Expr.app
+
 namespace Expr
+
   /-- A set `Γ` (of variables) extended by one more variable. -/
   inductive Extend (Γ : Type*) where
     /-- The additional variable. -/
@@ -102,24 +119,24 @@ namespace Expr
 
   /-- The substitution of an element for the extra variable. -/
   def subst {Γ A} [PCA A] (a : A) : Expr (Extend Γ) A → Expr Γ A
-  | .K => .K
-  | .S => .S
-  | .elm b => .elm b
-  | .var .here => .elm a
-  | .var (.there x) => .var x
-  | .app e₁ e₂ => .app (subst a e₁) (subst a e₂)
+  | K => K
+  | S => S
+  | elm b => elm b
+  | var .here => elm a
+  | var (.there x) => var x
+  | app e₁ e₂ => (subst a e₁) ⬝ (subst a e₂)
 
   /-- `abstr e` is an expression with one fewer variables than
       the expression `e`, which works similarly to function
       abastraction in the λ-calculus. It is at the heart of
       combinatory completeness. -/
   def abstr {Γ A} [PCA A] : Expr (Extend Γ) A → Expr Γ A
-  | .K => .app .K .K
-  | .S => .app .K .S
-  | .elm a => .app (.K) (.elm a)
-  | .var .here => .app (.app .S .K) .K
-  | .var (.there x) => .app .K (.var x)
-  | .app e₁ e₂ => .app (.app .S (abstr e₁)) (abstr e₂)
+  | K => K ⬝ K
+  | S => K ⬝ S
+  | elm a => K ⬝ elm a
+  | var .here => S ⬝ K ⬝ K
+  | var (.there x) => K ⬝ var x
+  | app e₁ e₂ => S ⬝ abstr e₁ ⬝ abstr e₂
 
   /-- An abstraction is defined. -/
   lemma defined_abstr {Γ A} [PCA A] (e : Expr (Extend Γ) A) : defined (abstr e) := by

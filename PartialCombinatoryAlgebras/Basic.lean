@@ -1,4 +1,5 @@
 import Mathlib.Data.Part
+import Mathlib.Data.Finset.Basic
 
 /-!
 # Partial combinatory algebras
@@ -91,22 +92,21 @@ instance Expr.hasDot {Γ A : Type*} : HasDot (Expr Γ A) where
   dot := Expr.app
 
 namespace Expr
+  universe u
+  variable {V : Type u} [DecidableEq V]
+  variable {Γ : Finset V}
+  variable {A : Type u} [PCA A]
 
-  /-- A set `Γ` (of variables) extended by one more variable. -/
-  inductive Extend (Γ : Type*) where
-    /-- The additional variable. -/
-  | here : Extend Γ
-    /-- The original variable -/
-  | there : Γ → Extend Γ
+  lemma neq_mem {x y : Γ} (h : y ≠ x) : ↑y ∈ Γ.erase x :=
+    Finset.mem_erase.mpr ⟨h ∘ Subtype.val_inj.mp, y.prop⟩
 
   /-- A valuation `η : Γ → A` assigning elements to variables,
       extended by one more variable and its value. -/
-  def extend {Γ A : Type} (η : Γ → A) (a : A) : Extend Γ → A
-  | .here => a
-  | .there x => η x
+  def extend (x : Γ) (a : A) (η : Γ.erase x → A) (y : Γ) : A :=
+    if h : y = x then a else η ⟨y, neq_mem h⟩
 
   /-- Evaluate an expression with respect to a given valuation `η`. -/
-  def eval {Γ A} [PCA A] (η : Γ → A): Expr Γ A → Part A
+  def eval (η : Γ → A): Expr Γ A → Part A
   | .K => PCA.K
   | .S => PCA.S
   | .elm a => .some a
@@ -114,65 +114,71 @@ namespace Expr
   | .app e₁ e₂ => (eval η e₁) ⬝ (eval η e₂)
 
   /-- An expression is said to be defined when it is defined at every valuation. -/
-  def defined {Γ A} [PCA A] (e : Expr Γ A) :=
-    ∀ (η : Γ → A), (eval η e) ⇓
+  def defined (e : Expr Γ A) := ∀ (η : Γ → A), (eval η e) ⇓
 
   /-- The substitution of an element for the extra variable. -/
-  def subst {Γ A} [PCA A] (a : A) : Expr (Extend Γ) A → Expr Γ A
+  def subst (x : Γ) (a : A) : Expr Γ A → Expr (Γ.erase x) A
   | K => K
   | S => S
   | elm b => elm b
-  | var .here => elm a
-  | var (.there x) => var x
-  | app e₁ e₂ => (subst a e₁) ⬝ (subst a e₂)
+  | var y =>
+    if h : y = x then
+      elm a
+    else
+      have hy : (↑y ∈ Γ.erase x) := by
+        simp ; intro eq ; apply Subtype.val_inj.mp at eq ; exact h eq
+      var ⟨y, hy⟩
+  | app e₁ e₂ => (subst x a e₁) ⬝ (subst x a e₂)
 
   /-- `abstr e` is an expression with one fewer variables than
       the expression `e`, which works similarly to function
       abastraction in the λ-calculus. It is at the heart of
       combinatory completeness. -/
-  def abstr {Γ A} [PCA A] : Expr (Extend Γ) A → Expr Γ A
+  def abstr(x : Γ) : Expr Γ A → Expr (Γ.erase x) A
   | K => K ⬝ K
   | S => K ⬝ S
   | elm a => K ⬝ elm a
-  | var .here => S ⬝ K ⬝ K
-  | var (.there x) => K ⬝ var x
-  | app e₁ e₂ => S ⬝ abstr e₁ ⬝ abstr e₂
+  | var y =>
+    if h : y = x then
+      S ⬝ K ⬝ K
+    else
+      have hy : (↑y ∈ Γ.erase x) := by
+        simp ; intro eq ; apply Subtype.val_inj.mp at eq ; exact h eq
+      K ⬝ var ⟨y, hy⟩
+  | app e₁ e₂ => S ⬝ (abstr x e₁) ⬝ (abstr x e₂)
 
   /-- An abstraction is defined. -/
-  lemma defined_abstr {Γ A} [PCA A] (e : Expr (Extend Γ) A) : defined (abstr e) := by
+  lemma defined_abstr (x : Γ) (e : Expr Γ A) : defined (abstr x e) := by
     intro η
     induction e
     case K => simp [eval]
     case S => simp [eval]
     case elm => simp [eval]
-    case var x => cases x <;> simp [eval]
+    case var y =>
+      cases (decEq y x)
+      case isFalse h => simp [abstr, eval, h]
+      case isTrue h => simp [abstr, eval, h]
     case app e₁ e₂ ih₁ ih₂ => simp [eval, ih₁, ih₂]
-
-  /-- Evaluating after substitution is equivalent to evaluating at
-      and extended valuation. -/
-  lemma eval_subst {Γ A} [PCA A] (e : Expr (Extend Γ) A) :
-    ∀ (a : A) (η : Γ → A), eval η (subst a e) = eval (extend η a) e := by
-    intro a η
-    induction e
-    case K => simp [subst, eval]
-    case S => simp [subst, eval]
-    case elm => simp [subst, eval]
-    case var x =>
-      cases x <;> simp [subst, eval, extend]
-    case app e₁ e₂ ih₁ ih₂ => simp [subst, eval, ih₁, ih₂]
 
   /-- `abstr e` behaves like abstraction in the extra variable.
       This is known as *combinatory completeness* -/
-  lemma eq_abstr {Γ A} [PCA A] (e : Expr (Extend Γ) A) (a : A) (η : Γ → A):
-    eval η (.app (abstr e) (.elm a)) = eval (extend η a) e := by
+  lemma eq_abstr (x : Γ) (e : Expr Γ A) (a : A) (η : Γ.erase x → A):
+    eval η (abstr x e ⬝ elm a) = eval (extend x a η) e := by
     induction e
     case K => simp [eval]
     case S => simp [eval]
     case elm => simp [eval]
-    case var x =>
-      cases x <;> simp [eval, extend]
+    case var y =>
+      cases (decEq y x)
+      case isFalse h => simp [eval, abstr, extend, h]
+      case isTrue h => simp [eval, abstr, extend, h]
     case app e₁ e₂ ih₁ ih₂ =>
       simp [abstr, eval] at ih₁
       simp [abstr, eval] at ih₂
-      simp [abstr, eval, defined_abstr _ η, ih₁, ih₂]
+      simp [abstr, eval, defined_abstr x _ η, ih₁, ih₂]
+
+  /-- Compile a closed expression to a partial element -/
+  def compile (h : IsEmpty Γ) (e : Expr Γ A) : Part A :=
+    eval h.elim e
+
 end Expr

@@ -74,24 +74,15 @@ The application $e_1 \cdot e_2$ in the third clause of the definition is formal,
 Given a set of variables $\Gamma$ and a set~$A$, a \emph{valuation} is a map $\eta : \Gamma \to A$ which assigns elements to variables.
 
 \begin{definition}
-  \label{def:extension}%
+  \label{def:override}%
   \leanok
-  \lean{Expr.Extend}
+  \lean{Expr.override}
   %
-  A set (context) $\Gamma$ may be \emph{extended} with a variable $x \not\in \Gamma$ to
-  a context $\extendCtx \Gamma x$ with one more variable.
-\end{definition}
-
-\begin{definition}
-  \label{def:extension}%
-  \leanok
-  \lean{Expr.extend}
-  %
-  Given a valuation $\eta : \Gamma \to A$ and $a \in A$, the
-  \emph{extension} $\extendEnv \eta x a$ is a valuation $\extendCtx \Gamma x$, defined by:
+  Given a valuation $\eta : \Gamma \to A$, $x \in A$ and $a \in a$, we may \emph{override} $\eta$
+  to get a valuation $\override \eta x a : \Gamma \to A$ such that
   %
   \begin{equation*}
-    (\extendEnv \eta x a) y =
+    (\override \eta x a) y =
     \begin{cases}
       \eta(y) &\text{if $y \in \Gamma$,}\\
       a       &\text{if $y = x$.}
@@ -140,8 +131,8 @@ Given a set of variables $\Gamma$ and a set~$A$, a \emph{valuation} is a map $\e
   \lean{Expr.abstr}
   \uses{def:expression, def:extension}
   %
-  Let $x \not\in \Gamma$,
-  The \emph{abstraction} of an expression $e \in \Expr {(\extendCtx \Gamma x)} A$ 
+  Let $x \in \Gamma$,
+  The \emph{abstraction} of an expression $e \in \Expr \Gamma A$ 
   is the expression $\abstr{x} e \in \Expr \Gamma A$ defined recursively:
   %
   \begin{align*}
@@ -175,12 +166,12 @@ Given a set of variables $\Gamma$ and a set~$A$, a \emph{valuation} is a map $\e
   \lean{Expr.eq_abstr}
   \uses{def:expression, def:evaluation, def:abstraction}
   %
-  Let $x \not\in \Gamma$ and $e \in \Expr {(\Gamma \cup \{x\})} A$.
+  Let $x \in \Gamma$ and $e \in \Expr {(\Gamma \cup \{x\})} A$.
   Then for every $a \in A$ and $\eta : \Gamma \to A$
   %
   \begin{equation*}
     \eval{(\abstr{x} e) \cdot a}{\eta} =
-    \eval{e}{\extendEnv{\eta}{x}{a}}.
+    \eval{e}{\override{\eta}{x}{a}}.
   \end{equation*}
 \end{proposition}
 
@@ -195,7 +186,8 @@ Let $A$ be a PCA.
 
 \begin{definition}
   \label{def:combinator-I}
-  \lean{PCA.I}
+  \lean{PCA.I, PCA.equal_I}
+  \leanok
   %
   The \emph{identity combinator} is $\comb{I} = \combS \, \combK \, \combK$.
 \end{definition}
@@ -204,6 +196,7 @@ Let $A$ be a PCA.
   \label{prop:equal-I}
   \lean{PCA.equal_I}
   \uses{def:combinator-I}
+  \leanok
   %
   For all $a \in A$. $I \, a = a$.
 \end{proposition}
@@ -211,6 +204,7 @@ Let $A$ be a PCA.
 \begin{definition}
   \label{def:combinator-pair}
   \lean{PCA.pair}
+  \leanok
   %
   The \emph{pairing combinator} is $\comb{pair} = \abstr{x} \abstr{y} \abstr{z} z \, x, y$.
 \end{definition}
@@ -218,23 +212,36 @@ Let $A$ be a PCA.
 \begin{definition}
   \label{def:combinator-fst}
   \lean{PCA.fst}
+  \leanok
   %
-  The \emph{first projection} is $\comb{fst} = \abstr{x} \abstr{y} x$.
+  The \emph{first projection} is $\comb{fst} = \abstr{x} x \, \combK$.
 \end{definition}
 
 \begin{definition}
   \label{def:combinator-snd}
   \lean{PCA.snd}
+  \leanok
   %
-  The \emph{second projection} is $\comb{snd} = \abstr{x} \abstr{y} y$.
+  The \emph{second projection} is $\comb{snd} = \abstr{x} x \, (\combK \, \comb{I})$.
 \end{definition}
 
 \begin{proposition}
-  \label{prop:equal-Pair}
-  \lean{PCA.equal_pair}
+  \label{prop:equal-fst-pair}
+  \lean{PCA.equal_fst_pair}
   \uses{def:combinator-pair, def:combinator-fst, def:combinator-snd}
+  \leanok
   %
-  For all $a, b \in A$, $\comb{fst} \, (\comb{pair} \, a \, b) = a$ and $\comb{snd} \, (\comb{pair} \, a \, b) = b$.
+  For all $a, b \in A$, $\comb{fst} \, (\comb{pair} \, a \, b) = a$.
+\end{proposition}
+
+\begin{proposition}
+  \label{prop:equal-fst-pair}
+  \lean{PCA.equal_fst_pair}
+  \lean{PCA.equal_snd_pair}
+  \uses{def:combinator-pair, def:combinator-fst, def:combinator-snd}
+  \leanok
+  %
+  For all $a, b \in A$, $\comb{snd} \, (\comb{pair} \, a \, b) = b$.
 \end{proposition}
 
 TODO: booleans, numbers, fixpoint combinator, primitive recursion, minimization.

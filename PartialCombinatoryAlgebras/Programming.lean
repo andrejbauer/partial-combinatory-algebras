@@ -1,8 +1,10 @@
 import PartialCombinatoryAlgebras.Basic
 
 namespace PCA
+  open Expr
 
-  variable {A : Type*} [PCA A]
+  universe u
+  variable {A : Type u} [PCA A]
 
   def I : Part A := S ⬝ K ⬝ K
 
@@ -15,17 +17,63 @@ namespace PCA
     intro hu
     rw [equal_I] <;> assumption
 
-  def emptyEnv {A} := @Empty.elim A
+  def pair : Part A :=
+    compile (abstr "x" (abstr "y" (abstr "z" (var "z" ⬝ var "x" ⬝ var "y"))))
 
-  #print emptyEnv
+  @[simp]
+  theorem defined_pair (u v : Part A):
+    u ⇓ → v ⇓ → (pair ⬝ u ⬝ v) ⇓ := by
+      intro hu hv
+      simp [pair]
+      rw [eval_abstr_app, eval_abstr_app] <;> try assumption
+      apply defined_abstr
 
-  def pair (u v : Part A) : Part A := Expr.eval emptyEnv (Expr.abstr (.var .here))
+  theorem equal_pair (u v w : Part A) :
+    u ⇓ → v ⇓ → w ⇓ → pair ⬝ u ⬝ v ⬝ w = w ⬝ u ⬝ v := by
+    intros hu hv hw
+    simp [pair]
+    rw [eval_abstr_app, eval_abstr_app, eval_abstr_app]
+    simp [override, eval]
+    rw [Part.some_get, Part.some_get, Part.some_get] <;> assumption
 
-  def fst : Part A := sorry
+  def fst : Part A :=
+    compile (abstr "x" (var "x" ⬝ .K))
 
-  def snd : Part A := sorry
+  theorem equal_fst (u : Part A):
+    u ⇓ → fst ⬝ u = u ⬝ K := by
+    intro hu
+    simp [fst]
+    rw [eval_abstr_app]
+    simp [override, eval]
+    rw [Part.some_get]
+    assumption
 
-  def equal_pair : Part A := sorry
+  def snd : Part A :=
+    compile ((abstr "x" (var "x" ⬝ (.K ⬝ (.S ⬝ .K ⬝ .K)))))
 
+  theorem equal_snd (u : Part A):
+    u ⇓ → snd ⬝ u = u ⬝ (K ⬝ (S ⬝ K ⬝ K)) := by
+    intro hu
+    simp [snd]
+    rw [eval_abstr_app]
+    simp [override, eval]
+    rw [Part.some_get]
+    assumption
 
-  end PCA
+  @[simp]
+  def equal_fst_pair (u v : Part A) : u ⇓ → v ⇓ → fst ⬝ (pair ⬝ u ⬝ v) = u := by
+    intro hu hv
+    calc
+    _ = pair ⬝ u ⬝ v ⬝ K  := by apply equal_fst ; apply defined_pair <;> assumption
+    _ = K ⬝ u ⬝ v        := by apply equal_pair <;> simp [hu, hv]
+    _ = u               := by apply eq_K <;> assumption
+
+  @[simp]
+  def equal_snd_pair (u v : Part A) : u ⇓ → v ⇓ → snd ⬝ (pair ⬝ u ⬝ v) = v := by
+    intro hu hv
+    calc
+    _ = pair ⬝ u ⬝ v ⬝ (K ⬝ (S ⬝ K ⬝ K)) := by apply equal_snd ; apply defined_pair <;> assumption
+    _ = (K ⬝ (S ⬝ K ⬝ K)) ⬝ u ⬝ v := by apply equal_pair <;> simp [hu, hv]
+    _ = v := by rw [eq_K, eq_S, eq_K] <;> simp [hu, hv]
+
+end PCA

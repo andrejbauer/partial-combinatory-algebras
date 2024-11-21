@@ -65,6 +65,10 @@ attribute [simp] PCA.defined_S₁
 attribute [simp] PCA.defined_S₂
 attribute [simp] PCA.eq_S
 
+/-- Every PCA is inhabited. We pick K as its default element. -/
+instance PCA.inhabited {A : Type*} [PCA A] : Inhabited A where
+  default := K.get defined_K₀
+
 /-! `Expr Γ A` is the type of expressions built inductively from
     constants `K` and `S`, variables in `Γ` (the variable context),
     the elements of a carrier set `A`, and formal binary application.
@@ -92,18 +96,36 @@ instance Expr.hasDot {Γ A : Type*} : HasDot (Expr Γ A) where
   dot := Expr.app
 
 namespace Expr
-  universe u
-  variable {V : Type u} [DecidableEq V]
-  variable {Γ : Finset V}
-  variable {A : Type u} [PCA A]
+  universe u v
+  variable {Γ : Type u} [DecidableEq Γ]
+  variable {A : Type v} [PCA A]
 
-  lemma neq_mem {x y : Γ} (h : y ≠ x) : ↑y ∈ Γ.erase x :=
-    Finset.mem_erase.mpr ⟨h ∘ Subtype.val_inj.mp, y.prop⟩
+  /-- Does a variable occur in an expression? -/
+  @[reducible]
+  def occurs (x : Γ) : Expr Γ A → Prop
+  | K => False
+  | S => False
+  | elm _ => False
+  | var y => y = x
+  | app e₁ e₂ => occurs x e₁ ∨ occurs x e₂
+
+  /-- Occurrence of a variable is decidable -/
+  instance decide_occurs {x : Γ} (e : Expr Γ A) : Decidable (occurs x e) :=
+    match e with
+    | K => .isFalse not_false
+    | S => .isFalse not_false
+    | elm _ => .isFalse not_false
+    | var y => decEq y x
+    | app e₁ e₂ =>
+      let _ := @decide_occurs x e₁
+      let _ := @decide_occurs x e₂
+      inferInstance
 
   /-- A valuation `η : Γ → A` assigning elements to variables,
-      extended by one more variable and its value. -/
-  def extend (x : Γ) (a : A) (η : Γ.erase x → A) (y : Γ) : A :=
-    if h : y = x then a else η ⟨y, neq_mem h⟩
+      with the value of `x` overridden to be `a`. -/
+  @[reducible]
+  def override (x : Γ) (a : A) (η : Γ → A) (y : Γ) : A :=
+    if y = x then a else η y
 
   /-- Evaluate an expression with respect to a given valuation `η`. -/
   def eval (η : Γ → A): Expr Γ A → Part A
@@ -117,34 +139,22 @@ namespace Expr
   def defined (e : Expr Γ A) := ∀ (η : Γ → A), (eval η e) ⇓
 
   /-- The substitution of an element for the extra variable. -/
-  def subst (x : Γ) (a : A) : Expr Γ A → Expr (Γ.erase x) A
+  def subst (x : Γ) (a : A) : Expr Γ A → Expr Γ A
   | K => K
   | S => S
   | elm b => elm b
-  | var y =>
-    if h : y = x then
-      elm a
-    else
-      have hy : (↑y ∈ Γ.erase x) := by
-        simp ; intro eq ; apply Subtype.val_inj.mp at eq ; exact h eq
-      var ⟨y, hy⟩
+  | var y => if y = x then elm a else var y
   | app e₁ e₂ => (subst x a e₁) ⬝ (subst x a e₂)
 
   /-- `abstr e` is an expression with one fewer variables than
       the expression `e`, which works similarly to function
       abastraction in the λ-calculus. It is at the heart of
       combinatory completeness. -/
-  def abstr(x : Γ) : Expr Γ A → Expr (Γ.erase x) A
+  def abstr (x : Γ): Expr Γ A → Expr Γ A
   | K => K ⬝ K
   | S => K ⬝ S
   | elm a => K ⬝ elm a
-  | var y =>
-    if h : y = x then
-      S ⬝ K ⬝ K
-    else
-      have hy : (↑y ∈ Γ.erase x) := by
-        simp ; intro eq ; apply Subtype.val_inj.mp at eq ; exact h eq
-      K ⬝ var ⟨y, hy⟩
+  | var y => if y = x then S ⬝ K ⬝ K else K ⬝ var y
   | app e₁ e₂ => S ⬝ (abstr x e₁) ⬝ (abstr x e₂)
 
   /-- An abstraction is defined. -/
@@ -161,24 +171,32 @@ namespace Expr
     case app e₁ e₂ ih₁ ih₂ => simp [eval, ih₁, ih₂]
 
   /-- `abstr e` behaves like abstraction in the extra variable.
-      This is known as *combinatory completeness* -/
-  lemma eq_abstr (x : Γ) (e : Expr Γ A) (a : A) (η : Γ.erase x → A):
-    eval η (abstr x e ⬝ elm a) = eval (extend x a η) e := by
+      This is known as *combinatory completeness*. -/
+  lemma eq_abstr (x : Γ) (e : Expr Γ A) (a : A) (η : Γ → A):
+    eval η (abstr x e ⬝ elm a) = eval (override x a η) e := by
     induction e
     case K => simp [eval]
     case S => simp [eval]
     case elm => simp [eval]
     case var y =>
       cases (decEq y x)
-      case isFalse h => simp [eval, abstr, extend, h]
-      case isTrue h => simp [eval, abstr, extend, h]
+      case isFalse h => simp [eval, abstr, override, h]
+      case isTrue h => simp [eval, abstr, override, h]
     case app e₁ e₂ ih₁ ih₂ =>
       simp [abstr, eval] at ih₁
       simp [abstr, eval] at ih₂
       simp [abstr, eval, defined_abstr x _ η, ih₁, ih₂]
 
-  /-- Compile a closed expression to a partial element -/
-  def compile (h : IsEmpty Γ) (e : Expr Γ A) : Part A :=
-    eval h.elim e
+  lemma eval_abstr_app (η : Γ → A) (x : Γ) (e : Expr Γ A) (u : Part A) (hu : u ⇓) :
+    eval η (abstr x e) ⬝ u = eval (override x (u.get hu) η) e := by
+    calc
+     _ = eval η (abstr x e ⬝ elm (u.get hu)) := by simp [eval]
+     _ = eval (override x (u.get hu) η) e := by apply eq_abstr
+
+  /-- Compile an expression to a partial element, substituting
+      the default value for any variables occurring in e. -/
+  @[simp]
+  def compile (e : Expr Γ A) : Part A :=
+    eval (fun _ => default) e
 
 end Expr

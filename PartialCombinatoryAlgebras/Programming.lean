@@ -76,4 +76,27 @@ namespace PCA
     _ = (K ⬝ (S ⬝ K ⬝ K)) ⬝ u ⬝ v := by apply equal_pair <;> simp [hu, hv]
     _ = v := by rw [eq_K, eq_S, eq_K] <;> simp [hu, hv]
 
+  def ite : Part A := sorry
+  def fal : Part A := sorry
+  def tru : Part A := sorry
+
+  theorem equal_ite_fal (u v : Part A) : u ⇓ → v ⇓ → ite ⬝ fal ⬝ u ⬝ v = v := by
+    sorry
+
+  theorem equal_ite_tru (u v : Part A) : u ⇓ → v ⇓ → ite ⬝ tru ⬝ u ⬝ v = u := by
+    sorry
+
+  def numeral (n : ℕ) : Part  A := sorry
+  def succ : Part A := sorry
+  def primrec : Part A := sorry
+
+  theorem equal_primrec_zero (n : ℕ) (u f : Part A) : u ⇓ → f ⇓ → primrec ⬝ u ⬝ f ⬝ numeral 0 = u := by
+    sorry
+
+  theorem equal_primrec_succ (n : ℕ) (u f : Part A) : u ⇓ → f ⇓ →
+    primrec ⬝ u ⬝ f ⬝ numeral n.succ = f ⬝ numeral n ⬝ (primrec ⬝ u ⬝ f ⬝ numeral n)
+    := by
+    sorry
+
+
 end PCA

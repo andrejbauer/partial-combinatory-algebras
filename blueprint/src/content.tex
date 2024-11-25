@@ -17,7 +17,18 @@ It serves as a model blueprint to help students create their own class project b
 
 \section{Basic definitions}
 
-Given a possibly undefined expression or an element of a set, we write $\defined{e}$ to indicate that the element is defined.
+The set of \emph{partial elements} $\Part{A}$ in $A$ is
+%
+\begin{equation*}
+  \Part{A} = \set{ u \subseteq A \such \all{x, y \in y} x = y}.
+\end{equation*}
+%
+We think of $\emptyset$ as the undefined value and $\set{a}$ the defined, or \emph{total} value $a \in A$.
+We construe each $a \in A$ also as the element $\set{a} \in \Part{A}$, i.e., there is an implicit coercion $A \to \Part{A}$.
+
+Given $u \in \Part{A}$, write $\defined{u}$ to mean that $u$ is defined, i.e., $\some{a \in A} a \in u$.
+
+Initial experimentation with formalization shows that it is advantageous to work with partial elements rather than elements, as that avoids coercions and helps the rpoof assistant compute types. When a partial element should be total this is expressed as a separate claim.
 
 \begin{definition}
   \label{def:partial-application}
@@ -25,8 +36,14 @@ Given a possibly undefined expression or an element of a set, we write $\defined
   \lean{PartialApplication}
   \leanok
   %
-  A \emph{partial application} on a set $A$ is a partial map ${-} \cdot_A {-} : A \times A \parto A$.
+  A \emph{partial application} on a set $A$ is a map ${-} \cdot_A {-} : \Part{A} \times \Part{A} \to \Part{A}$.
 \end{definition}
+
+We also write $u \, v$ and $u \cdot v$ in place of $u \cdot_A v$ and we associate application to the left, so that $u \cdot v \cdot w = (u \cdot v) \cdot w$.
+
+The preceding defintion is non-standard, as one usually expects ${-} \cdot_A {-} : A \times A \to \Part{A}$.
+However, as explained above, we prefer our definition as it is easier to work with. You might also have expected
+strictness conditions stating that $\defined{u \cdot_A v}$ implies $\defined{u}$ and $\defined{v}$, which we did have in the initial formalization, but they were never used. It looks like our formalization already lead to a small discovery, namely that partial combinatory algebras work just as well when its elements can be applied to undefined values.
 
 \begin{definition}
   \label{def:PCA}
@@ -35,18 +52,24 @@ Given a possibly undefined expression or an element of a set, we write $\defined
   \lean{PCA}
   \uses{def:partial-application}
   %
-  A set $A$ with a partial map ${-} \cdot {-}$ is a \emph{partial combinatory algebra (PCA)} if there are
-  elements $\combK, \combS \in A$ such that, for all $a, b, c \in A$:
+  A set $A$ with a partial map ${-} \cdot_A {-}$ is a \emph{partial combinatory algebra (PCA)} if there are
+  elements $\combK, \combS \in \Part{A}$ such that, for all $u, v, w \in \Part{A}$:
   %
   \begin{align*}
-    &\defined{\combK \cdot a}, &
-    &\combK \cdot a \cdot b = a \\
-    &\defined{\combS \cdot a \cdot b}, &
-    &\combS \cdot a \cdot b \cdot c = (a \cdot c) \cdot (b \cdot c).
+    &\defined{K}, &
+    &\defined{S},\\
+    &\defined{u} \lthen \defined{\combK \, u}, &
+    &\defined{u} \lthen \defined{\combS \, u}, \\
+    &\defined{u} \land \defined{v} \lthen \defined{\combK \, u \, v}, &
+    &\defined{u} \land \defined{v} \lthen \defined{\combS \, u \, v}, \\
+    &\defined{u} \land \defined{v} \lthen \combK \, u \, v = u, &
+    &\defined{u} \land \defined{v} \land \defined{w} \lthen \defined{\combS \, u \, v \, w}, \\
+    &&
+    &\defined{u} \land \defined{v} \land \defined{w}
+     \lthen \combS \, u \, v \, w = (u \, w) \, (v \, w), \\
   \end{align*}
 \end{definition}
 
-We also write $a \, b$ for $a \cdot b$ and we associate application to the left.
 
 \section{Combinatory completeness}
 
@@ -69,7 +92,7 @@ We also write $a \, b$ for $a \cdot b$ and we associate application to the left.
 \end{definition}
 
 \noindent
-The application $e_1 \cdot e_2$ in the third clause of the definition is formal, i.e., it is just a constructor of an inductive datatype.
+The application $e_1 \cdot e_2$ in the third clause of the definition is formal, i.e., it is just a constructor of an inductive datatype. We again deviated from the standard definition in an inessential way by including primitive constants $\combK$ and $\combS$, separate from the corresponding elements of~$A$.
 
 Given a set of variables $\Gamma$ and a set~$A$, a \emph{valuation} is a map $\eta : \Gamma \to A$ which assigns elements to variables.
 
@@ -102,14 +125,12 @@ Given a set of variables $\Gamma$ and a set~$A$, a \emph{valuation} is a map $\e
   valuation $\eta : \Gamma \to A$ is defined recursively by the clauses
   %
   \begin{align*}
-    \eval{\mathtt{K}}{\eta} &= \combK \\
-    \eval{\\mathtt{S}}{\eta} &= \combK \\
-    \eval{a}{\eta} &= a        &&\text{if $a \in A$}\\
+    \eval{\combK}{\eta} &= \combK \\
+    \eval{\combS}{\eta} &= \combK \\
+    \eval{a}{\eta} &= a  &&\text{if $a \in A$}\\
     \eval{x}{\eta} &= \eta(x)  &&\text{if $x \in \Gamma$}\\
     \eval{e_1 \cdot e_2}{\eta} &= (\eval{e_1} \eta) \cdot_A (\eval{e_2} \eta).
   \end{align*}
-  %
-  The evaluation may be undefined.
 \end{definition}
 
 \begin{definition}
@@ -131,9 +152,9 @@ Given a set of variables $\Gamma$ and a set~$A$, a \emph{valuation} is a map $\e
   \lean{Expr.abstr}
   \uses{def:expression, def:extension}
   %
-  Let $x \in \Gamma$,
   The \emph{abstraction} of an expression $e \in \Expr \Gamma A$ 
-  is the expression $\abstr{x} e \in \Expr \Gamma A$ defined recursively:
+  with respect to a variable $x \in \Gamma$
+  is the expression $\abstr{x} e \in \Expr \Gamma A$ defined recursively by
   %
   \begin{align*}
     \abstr{x} x &= \combS \cdot \combK \cdot \combK, \\
@@ -182,73 +203,100 @@ Given a set of variables $\Gamma$ and a set~$A$, a \emph{valuation} is a map $\e
 
 \section{Programming with PCAs}
 
-Let $A$ be a PCA.
+We next show how to write programs in a PCA~$A$.
+We call the elements of~$A$ accomplishing various programming tasks \emph{combinators}.
 
-\begin{definition}
+\begin{definition}[Identity]
   \label{def:combinator-I}
   \lean{PCA.I, PCA.equal_I}
   \leanok
+  \uses{def:pca}
   %
-  The \emph{identity combinator} is $\comb{I} = \combS \, \combK \, \combK$.
+  There is the \emph{identity combinator} $\comb{I} \in A$ such that $I \, a = a$ for all $a \in A$.
 \end{definition}
 
-\begin{proposition}
-  \label{prop:equal-I}
-  \lean{PCA.equal_I}
-  \uses{def:combinator-I}
+\begin{definition}[Pairing]
+  \label{def:combinator-pairing}
+  \uses{def:pca}
+  \lean{PCA.pair, PCA.fst, PCA.snd, PCA.equal_fst_pair, PCA.equal_snd_pair}
   \leanok
   %
-  For all $a \in A$. $I \, a = a$.
-\end{proposition}
+  There are combinators $\comb{pair}, \comb{fst}, \comb{snd} \in A$ such that, for all $a, b \in A$,
+  %
+  \begin{align*}
+    \comb{fst}\, (\comb{pair}\,a\,b) &= a,
+    &
+    \comb{snd}\, (\comb{pair}\,a\,b) &= b.
+  \end{align*}
+\end{definition}
+
+\begin{definition}[Booleans]
+  \label{def:combinator-bool}
+  \lean{PCA.ite, PCA.fal, PCA.tru, PCA.equal_ite_fal, PCA.equal_ite_tru}
+  \uses{def:pca}
+  %
+  There are combinators $\comb{ite} ,  \comb{fal}, \comb{tru} \in A$ such that, for all $a, b \in a$,
+  %
+  \begin{align*}
+    \comb{ite} \, \comb{tru} \ ,a \, b &= a,
+    &
+    \comb{ite} \, \comb{fal} \, a \, b &= b.
+  \end{align*}
+\end{definition}
+
+\begin{definition}[Numerals]
+  \label{def:combinator-nat}
+  \lean{PCA.numeral, PCA.succ, PCA.primrec}
+  \uses{def:pca}
+  %
+  For each $n \in \NN$ there is $\overline{n} \in A$, as well as combinators $\comb{succ}, \comb{primrec} \in A$
+  such that, for all $n \in \NN$ and $a, f \in A$,
+  %
+  \begin{align*}
+    \comb{succ} \, \numeral{n} &= \numeral{n+1},
+    \\
+    \comb{primrec} \, a \, f \, \numeral{0} &= a,
+    \\
+    \comb{primrec} \, a \, f \, \numeral{n+1} &= f \, \numeral{n} \, (\comb{primrec} \, a \, f \, \numeral{n}).
+  \end{align*}
+\end{definition}
+
+\begin{definition}[General recursion]
+  %
+  \label{def:combinator-fix}
+  \uses{def:pca}
+  %
+  There is a combinator $\comb{Y} \in A$ such that, for all $f, a \in A$,
+  %
+  \begin{equation*}
+    \comb{Y} \, f \, a = f (\comb{Y} \, f) \, a.
+  \end{equation*}
+\end{definition}
 
 \begin{definition}
-  \label{def:combinator-pair}
-  \lean{PCA.pair}
-  \leanok
+  \label{def:representable-function}
   %
-  The \emph{pairing combinator} is $\comb{pair} = \abstr{x} \abstr{y} \abstr{z} z \, x, y$.
+  A partial map $f : A \parto A$ is \emph{represented} by $a \in A$ when,
+  for all $b \in B$, $f(b) = a \cdot b$.
 \end{definition}
 
-\begin{definition}
-  \label{def:combinator-fst}
-  \lean{PCA.fst}
-  \leanok
-  %
-  The \emph{first projection} is $\comb{fst} = \abstr{x} x \, \combK$.
-\end{definition}
-
-\begin{definition}
-  \label{def:combinator-snd}
-  \lean{PCA.snd}
-  \leanok
-  %
-  The \emph{second projection} is $\comb{snd} = \abstr{x} x \, (\combK \, \comb{I})$.
-\end{definition}
-
-\begin{proposition}
-  \label{prop:equal-fst-pair}
-  \lean{PCA.equal_fst_pair}
-  \uses{def:combinator-pair, def:combinator-fst, def:combinator-snd}
-  \leanok
-  %
-  For all $a, b \in A$, $\comb{fst} \, (\comb{pair} \, a \, b) = a$.
-\end{proposition}
-
-\begin{proposition}
-  \label{prop:equal-fst-pair}
-  \lean{PCA.equal_fst_pair}
-  \lean{PCA.equal_snd_pair}
-  \uses{def:combinator-pair, def:combinator-fst, def:combinator-snd}
-  \leanok
-  %
-  For all $a, b \in A$, $\comb{snd} \, (\comb{pair} \, a \, b) = b$.
-\end{proposition}
-
-TODO: booleans, numbers, fixpoint combinator, primitive recursion, minimization.
+\begin{theorem}
+  Every general recursive map $f : \NN \parto \NN$ is represented in the following sense:
+  there is $a \in A$ such that, for all $n \in \NN$, if $\defined{f(n)}$ then $\numeral{f(n)} = a \cdot \numeral{n}$.
+\end{theorem}
 
 \section{Examples of PCAs}
 
-TODO
+\subsection{Untyped $\lambda$-calculus}
+\label{sec:untyped-lambda-calculus}
+
+\subsection{Kleene's first algebra}
+\label{sec:kleenes-first-algebra}
+
+\subsection{Scott's graph model $\mathcal{P}(\omega)$}
+\label{sec:scotts-graph-model}
+
+
 
 %%% Local Variables:
 %%% mode: LaTeX

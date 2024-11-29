@@ -150,7 +150,7 @@ Given a set of variables $\Gamma$ and a set~$A$, a \emph{valuation} is a map $\e
   %
   \leanok
   \lean{Expr.abstr}
-  \uses{def:expression, def:extension}
+  \uses{def:expression, def:extension, def:PCA}
   %
   The \emph{abstraction} of an expression $e \in \Expr \Gamma A$ 
   with respect to a variable $x \in \Gamma$
@@ -169,7 +169,7 @@ Given a set of variables $\Gamma$ and a set~$A$, a \emph{valuation} is a map $\e
   \label{prop:abstraction-defined}
   %
   \leanok
-  \lean{Expr.defined_abstr}
+  \lean{Expr.df_abstr}
   \uses{def:expression-defined, def:abstraction}
   %
   An abstraction $\abstr{x} e$ is defined.
@@ -184,7 +184,7 @@ Given a set of variables $\Gamma$ and a set~$A$, a \emph{valuation} is a map $\e
   \label{prop:abstraction-equal}
   %
   \leanok
-  \lean{Expr.eq_abstr}
+  \lean{Expr.eval_abstr}
   \uses{def:expression, def:evaluation, def:abstraction}
   %
   Let $x \in \Gamma$ and $e \in \Expr {(\Gamma \cup \{x\})} A$.
@@ -208,17 +208,17 @@ We call the elements of~$A$ accomplishing various programming tasks \emph{combin
 
 \begin{definition}[Identity]
   \label{def:combinator-I}
-  \lean{PCA.I, PCA.equal_I}
+  \lean{PCA.I, PCA.eq_I}
   \leanok
-  \uses{def:pca}
+  \uses{def:PCA}
   %
   There is the \emph{identity combinator} $\comb{I} \in A$ such that $I \, a = a$ for all $a \in A$.
 \end{definition}
 
 \begin{definition}[Pairing]
   \label{def:combinator-pairing}
-  \uses{def:pca}
-  \lean{PCA.pair, PCA.fst, PCA.snd, PCA.equal_fst_pair, PCA.equal_snd_pair}
+  \uses{def:PCA}
+  \lean{PCA.pair, PCA.fst, PCA.snd, PCA.eq_fst_pair, PCA.eq_snd_pair}
   \leanok
   %
   There are combinators $\comb{pair}, \comb{fst}, \comb{snd} \in A$ such that, for all $a, b \in A$,
@@ -232,8 +232,8 @@ We call the elements of~$A$ accomplishing various programming tasks \emph{combin
 
 \begin{definition}[Booleans]
   \label{def:combinator-bool}
-  \lean{PCA.ite, PCA.fal, PCA.tru, PCA.equal_ite_fal, PCA.equal_ite_tru}
-  \uses{def:pca}
+  \lean{PCA.ite, PCA.fal, PCA.tru, PCA.eq_ite_fal, PCA.eq_ite_tru}
+  \uses{def:PCA}
   %
   There are combinators $\comb{ite} ,  \comb{fal}, \comb{tru} \in A$ such that, for all $a, b \in a$,
   %
@@ -247,7 +247,7 @@ We call the elements of~$A$ accomplishing various programming tasks \emph{combin
 \begin{definition}[Numerals]
   \label{def:combinator-nat}
   \lean{PCA.numeral, PCA.succ, PCA.primrec}
-  \uses{def:pca}
+  \uses{def:PCA}
   %
   For each $n \in \NN$ there is $\overline{n} \in A$, as well as combinators $\comb{succ}, \comb{primrec} \in A$
   such that, for all $n \in \NN$ and $a, f \in A$,
@@ -264,7 +264,7 @@ We call the elements of~$A$ accomplishing various programming tasks \emph{combin
 \begin{definition}[General recursion]
   %
   \label{def:combinator-fix}
-  \uses{def:pca}
+  \uses{def:PCA}
   %
   There is a combinator $\comb{Y} \in A$ such that, for all $f, a \in A$,
   %

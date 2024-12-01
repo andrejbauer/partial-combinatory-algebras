@@ -149,7 +149,7 @@ namespace Expr
       case isTrue h => simp [abstr, eval, h]
     case app e₁ e₂ ih₁ ih₂ => simp [eval, ih₁, ih₂]
 
-  /-- `abstr e` behaves like abstraction in the extra variable.
+  /-- `eval_abstr e` behaves like abstraction in the extra variable.
       This is known as *combinatory completeness*. -/
   lemma eval_abstr (x : Γ) (e : Expr Γ A) (a : A) (η : Γ → A):
     eval η (abstr x e ⬝ elm a) = eval (override x a η) e := by
@@ -193,24 +193,13 @@ namespace Expr
       let a₂ ← eval_closed e₂ ;
       return (a₁ ⬝ a₂)
 
-  declare_syntax_cat combinator
-
-  syntax:20 "≪" ident "≫" combinator:20 : combinator
-  syntax:90 "var" ident : combinator
-  syntax:90 "S" : combinator
-  syntax:90 "K" : combinator
-  syntax:40 combinator:40 "⬝" combinator:35 : combinator
-  syntax "[pca:" combinator "]" : term
-  syntax "⟦" combinator "⟧" : term
+  syntax:20 "≪" term "≫" term:20 : term
 
   macro_rules
-  | `([pca: ≪ $x:ident ≫ $a:combinator]) => `(Expr.abstr $(Lean.quote x.getId) [pca: $a])
-  | `([pca: var $x:ident]) => `(Expr.var $(Lean.quote x.getId))
-  | `([pca: K]) => `(Expr.K)
-  | `([pca: S]) => `(Expr.S)
-  | `([pca: $a:combinator ⬝ $b:combinator]) => `(Expr.app [pca: $a] [pca: $b])
+  | `(≪ $x:term ≫ $a:term) => `(Expr.abstr $x $a)
 
+  syntax "[pca: " term "]" : term
   macro_rules
- | `(⟦ $e:combinator ⟧) => `(Expr.compile (Γ := Lean.Name) [pca: $e])
+  | `([pca: $e:term ]) => `(Expr.compile (Γ := Lean.Name) $e)
 
 end Expr

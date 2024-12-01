@@ -1,24 +1,24 @@
 import PartialCombinatoryAlgebras.Basic
 
 namespace PCA
+
   open Expr
 
   universe u
   variable {A : Type u} [PCA A]
 
-  def I : Part A := S ⬝ K ⬝ K
+  def I : Part A := [pca: Expr.S ⬝ Expr.K ⬝ Expr.K]
 
   @[simp]
   theorem eq_I {u : Part A} : u ⇓ → I ⬝ u = u := by
-    intro hu ; simp [I, hu]
+    intro hu ; simp [I, hu, eval]
 
   @[simp]
   theorem df_I (u : Part A) : u ⇓ → (I ⬝ u) ⇓ := by
     intro hu
     rw [eq_I] <;> assumption
 
-  def pair : Part A :=
-    compile (abstr "x" (abstr "y" (abstr "z" (var "z" ⬝ var "x" ⬝ var "y"))))
+  def pair : Part A := [pca: ≪`x≫ ≪`y≫ ≪`z≫ var `z ⬝ var `x ⬝ var `y]
 
   @[simp]
   theorem df_pair (u v : Part A):
@@ -28,6 +28,7 @@ namespace PCA
       rw [eval_abstr_app, eval_abstr_app] <;> try assumption
       apply df_abstr
 
+  @[simp]
   theorem eq_pair (u v w : Part A) :
     u ⇓ → v ⇓ → w ⇓ → pair ⬝ u ⬝ v ⬝ w = w ⬝ u ⬝ v := by
     intros hu hv hw
@@ -36,11 +37,10 @@ namespace PCA
     simp [override, eval]
     rw [Part.some_get, Part.some_get, Part.some_get] <;> assumption
 
-  def fst : Part A :=
-    compile (abstr "x" (var "x" ⬝ .K))
+  def fst : Part A := [pca: ≪ `x ≫ var `x ⬝ Expr.K]
 
   theorem eq_fst (u : Part A):
-    u ⇓ → fst ⬝ u = u ⬝ K := by
+    u ⇓ → fst ⬝ u = u ⬝ PCA.K := by
     intro hu
     simp [fst]
     rw [eval_abstr_app]
@@ -48,8 +48,7 @@ namespace PCA
     rw [Part.some_get]
     assumption
 
-  def snd : Part A :=
-    compile ((abstr "x" (var "x" ⬝ (.K ⬝ (.S ⬝ .K ⬝ .K)))))
+  def snd : Part A := [pca: ≪ `x ≫ var `x ⬝ (Expr.K ⬝ (Expr.S ⬝ Expr.K ⬝ Expr.K)) ]
 
   theorem eq_snd (u : Part A):
     u ⇓ → snd ⬝ u = u ⬝ (K ⬝ (S ⬝ K ⬝ K)) := by
@@ -97,6 +96,5 @@ namespace PCA
     primrec ⬝ u ⬝ f ⬝ numeral n.succ = f ⬝ numeral n ⬝ (primrec ⬝ u ⬝ f ⬝ numeral n)
     := by
     sorry
-
 
 end PCA

@@ -98,7 +98,7 @@ instance Expr.hasDot {Γ A : Type*} : HasDot (Expr Γ A) where
 namespace Expr
   universe u v
   variable {Γ : Type u} [DecidableEq Γ]
-  variable {A : Type v} [PCA A]
+  variable {A : Type} [PCA A]
 
   /-- A valuation `η : Γ → A` assigning elements to variables,
       with the value of `x` overridden to be `a`. -/
@@ -173,10 +173,50 @@ namespace Expr
      _ = eval η (abstr x e ⬝ elm (u.get hu)) := by simp [eval]
      _ = eval (override x (u.get hu) η) e := by apply eval_abstr
 
-  /-- Compile an expression to a partial element, substituting
-      the default value for any variables occurring in e. -/
-  @[simp]
-  def compile (e : Expr Γ A) : Part A :=
-    eval (fun _ => default) e
+  -- /-- Compile an expression to a partial element, substituting
+  --     the default value for any variables occurring in e. -/
+  -- @[simp]
+  -- def compile (e : Expr Γ A) : Part A :=
+  --   eval (fun _ => default) e
+
+  /-- Evaluate an expression under the assumption that it is closed.
+      Return `inl x` if variable `x` is encountered, otherwise `inr u`
+      where `u` is the partial element so obtained. -/
+  def eval_closed : Expr Γ A → Sum Γ (Part A)
+  | K => return PCA.K
+  | S => return PCA.S
+  | elm a => return (some a)
+  | var x => .inl x
+  | app e₁ e₂ =>
+    do
+      let a₁ ← eval_closed e₁ ;
+      let a₂ ← eval_closed e₂ ;
+      return (a₁ ⬝ a₂)
+
+  declare_syntax_cat combinator
+
+  -- syntax:10 "≪" ident "≫" combinator:10 : combinator
+  syntax:90 "var" ident : combinator
+  syntax:90 "S" : combinator
+  syntax:90 "K" : combinator
+  syntax:40 combinator:40 "⬝" combinator:35 : combinator
+  syntax "[pca:" combinator "]" : term
+
+  macro_rules
+  | `([pca: var $x:ident]) => `(Expr.var x.toString)
+  | `([pca: K]) => `(Expr.K)
+  | `([pca: S]) => `(Expr.S)
+  | `([pca: $a:combinator ⬝ $b:combinator]) => `(Expr.app [pca: $a] [pca: $b])
+
+  #check [pca: var x] -- unkown identifier x.toString
+
+  #check Lean.Syntax.NameLit
+
+  -- open Qq
+  -- elab "⟦" e:term "⟧" : term => do
+  --   let e ← unsafe Lean.Elab.Term.evalTerm (Expr Lean.Ident A) q(Expr Lean.Ident Nat) e
+  --   match eval_closed e with
+  --   | .inr a => return q($a)
+  --   | .inl x => throwError "{x} occurs"
 
 end Expr

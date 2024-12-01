@@ -185,7 +185,7 @@ Given a set of variables $\Gamma$ and a set~$A$, a \emph{valuation} is a map $\e
   %
   \leanok
   \lean{Expr.eval_abstr}
-  \uses{def:expression, def:evaluation, def:abstraction}
+  \uses{def:expression, def:evaluation, def:abstraction, def:override
   %
   Let $x \in \Gamma$ and $e \in \Expr {(\Gamma \cup \{x\})} A$.
   Then for every $a \in A$ and $\eta : \Gamma \to A$
@@ -275,12 +275,15 @@ We call the elements of~$A$ accomplishing various programming tasks \emph{combin
 
 \begin{definition}
   \label{def:representable-function}
+  \uses{def:PCA}
   %
   A partial map $f : A \parto A$ is \emph{represented} by $a \in A$ when,
   for all $b \in B$, $f(b) = a \cdot b$.
 \end{definition}
 
 \begin{theorem}
+  \label{thm:recursive-map-representable}
+  \uses{def:representable-function}
   Every general recursive map $f : \NN \parto \NN$ is represented in the following sense:
   there is $a \in A$ such that, for all $n \in \NN$, if $\defined{f(n)}$ then $\numeral{f(n)} = a \cdot \numeral{n}$.
 \end{theorem}

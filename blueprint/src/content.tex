@@ -234,14 +234,15 @@ We call the elements of~$A$ accomplishing various programming tasks \emph{combin
   \label{def:combinator-bool}
   \lean{PCA.ite, PCA.fal, PCA.tru, PCA.eq_ite_fal, PCA.eq_ite_tru}
   \uses{def:PCA}
+  \leanok
   %
-  There are combinators $\comb{ite} ,  \comb{fal}, \comb{tru} \in A$ such that, for all $a, b \in a$,
+  There are combinators $\comb{ite} \, \comb{fal}, \comb{tru} \in A$ such that, for all $a, b \in a$,
   %
-  \begin{align*}
-    \comb{ite} \, \comb{tru} \ ,a \, b &= a,
-    &
-    \comb{ite} \, \comb{fal} \, a \, b &= b.
-  \end{align*}
+  \begin{equation*}
+    \comb{ite} \, \comb{tru} \ ,a \, b = a
+    \text{and}
+    \comb{ite} \, \comb{fal} \, a \, b = b.
+  \end{equation*}
 \end{definition}
 
 \begin{definition}[Numerals]
@@ -261,11 +262,26 @@ We call the elements of~$A$ accomplishing various programming tasks \emph{combin
   \end{align*}
 \end{definition}
 
+\begin{definition}
+  %
+  \label{def:combinator-Y}
+  \uses{def:PCA}
+  \lean{PCA.Y, PCA.df_Y, PCA.eq_Y}
+  \leanok
+  %
+  There is a combinator $\comb{Y} \in A$ such that, for all $a \in A$,
+  %
+  \begin{equation*}
+    \comb{Y} \, a = a (\comb{Z} \, a).
+  \end{equation*}
+\end{definition}
+
 \begin{definition}[General recursion]
   %
-  \label{def:combinator-fix}
+  \label{def:combinator-Z}
   \uses{def:PCA}
   \lean{PCA.Z, PCA.df_Z, PCA.eq_Z}
+  \leanok
   %
   There is a combinator $\comb{Z} \in A$ such that, for all $f, a \in A$,
   %

@@ -7,7 +7,7 @@ namespace PCA
   universe u
   variable {A : Type u} [PCA A]
 
-  def I : Part A := [pca: Expr.S ⬝ Expr.K ⬝ Expr.K]
+  def I : Part A := S ⬝ K ⬝ K
 
   def I.elm {Γ} : Expr Γ A := .elm (I.get (PCA.df_S₂ PCA.df_K₀ PCA.df_K₀))
 
@@ -59,8 +59,8 @@ namespace PCA
     u ⇓ → v ⇓ → w ⇓ → pair ⬝ u ⬝ v ⬝ w = w ⬝ u ⬝ v := by
     intros hu hv hw
     simp [pair]
-    rw [eval_abstr_app, eval_abstr_app, eval_abstr_app]
-    simp [override, eval]
+    rw [eval_abstr_app, eval_abstr_app, eval_abstr_app, eval_override, eval_override, eval_override]
+    simp [eval]
     rw [Part.some_get, Part.some_get, Part.some_get] <;> assumption
 
   def fst : Part A := [pca: ≪ `x ≫ var `x ⬝ Expr.K]
@@ -72,8 +72,8 @@ namespace PCA
     u ⇓ → fst ⬝ u = u ⬝ PCA.K := by
     intro hu
     simp [fst]
-    rw [eval_abstr_app]
-    simp [override, eval]
+    rw [eval_abstr_app, eval_override]
+    simp [eval]
     rw [Part.some_get]
     assumption
 
@@ -86,8 +86,8 @@ namespace PCA
     u ⇓ → snd ⬝ u = u ⬝ K' := by
     intro hu
     simp [snd]
-    rw [eval_abstr_app]
-    simp [override, eval]
+    rw [eval_abstr_app, eval_override]
+    simp [eval]
     rw [Part.some_get] <;> simp [hu, K']
 
   @[simp]
@@ -113,6 +113,8 @@ namespace PCA
   def fal : Part A := K'
 
   @[simp] theorem df_fal : (fal : Part A) ⇓ := by simp [fal]
+
+  @[simp] theorem eq_fal (u v : Part A) : u ⇓ → v ⇓ → fal ⬝ u ⬝ v = v := eq_K' _ _
 
   /-- The boolean true -/
   def tru : Part A := K
@@ -156,12 +158,16 @@ namespace PCA
   theorem eq_X (u v w : Part A) : u ⇓ → v ⇓ → w ⇓ → X ⬝ u ⬝ v ⬝ w = v ⬝ (u ⬝ u ⬝ v) ⬝ w := by
     intros hu hv hw
     simp [X]
-    rw [eval_abstr_app, eval_abstr_app, eval_abstr_app] <;> try assumption
-    simp [eval, override]
+    rw [eval_abstr_app, eval_abstr_app, eval_abstr_app, eval_override, eval_override, eval_override] <;> try assumption
+    simp [eval]
 
   def Z : Part A := X ⬝ X
 
+  @[simp]
   theorem df_Z : (Z : Part A) ⇓ := by simp [Z]
+
+  @[reducible]
+  def Z.elm {Γ} : Expr Γ A := .elm (Z.get df_Z)
 
   @[simp]
   theorem df_Z_app (u : Part A) : u ⇓ → (Z ⬝ u) ⇓ := by
@@ -188,8 +194,8 @@ namespace PCA
   def eq_W (u v : Part A) : u ⇓ → v ⇓ → W ⬝ u ⬝ v = v ⬝ (u ⬝ u ⬝ v) := by
     intro hu hv
     simp [W]
-    rw [eval_abstr_app, eval_abstr_app] <;> try assumption
-    simp [eval, override]
+    rw [eval_abstr_app, eval_abstr_app, eval_override, eval_override] <;> try assumption
+    simp [eval]
 
   def Y : Part A := W ⬝ W
 
@@ -241,24 +247,84 @@ namespace PCA
   def pred : Part A := [pca: ≪`x≫ (fst.elm ⬝ var `x) ⬝ I.elm ⬝ (snd.elm ⬝ var `x)]
 
   @[simp]
+  def df_pred : (pred : Part A) ⇓ := by simp [pred] ; apply df_abstr
+
+  @[reducible]
+  def pred.elm {Γ} : Expr Γ A := .elm (pred.get df_pred)
+
+  @[simp]
   theorem eq_pred (u : Part A) : u ⇓ → pred ⬝ u = (fst ⬝ u) ⬝ I ⬝ (snd ⬝ u) := by
     intro hu
     simp [pred]
-    rw [eval_abstr_app] <;> try assumption
-    simp [eval, override]
+    rw [eval_abstr_app, eval_override] <;> try assumption
+    simp [eval]
 
   @[simp]
-  theorem eq_pred_succ (n : Nat) : pred ⬝ (succ ⬝ numeral n) = (numeral n : Part A) := sorry
+  theorem eq_pred_succ (u : Part A) : u ⇓ → pred ⬝ (succ ⬝ u) = u := by
+    intro hu
+    simp [pred]
+    rw [eval_abstr_app, eval_override] <;> simp [eval, succ, fal, hu]
+
+  def R : Part A := [pca: ≪`r≫ ≪`x≫ ≪`f≫ ≪`m≫ (fst.elm ⬝ var `m) ⬝ (Expr.K ⬝ var `x) ⬝
+    (≪ `y ≫ var `f ⬝ (pred.elm ⬝ var `m) ⬝ (var `r ⬝ var `x ⬝ var `f ⬝ (pred.elm ⬝ var `m) ⬝ (Expr.S ⬝ Expr.K ⬝ Expr.K)))]
+
+  def eq_R (r u f m : Part A) (hr : r ⇓) (hu : u ⇓) (hf : f ⇓) (hm : m ⇓) :
+      R ⬝ r ⬝ u ⬝ f ⬝ m =
+      (fst ⬝ m) ⬝ (K ⬝ u) ⬝ [pca: ≪`y≫ .elm (f.get hf) ⬝
+      (pred.elm ⬝ .elm (m.get hm)) ⬝ (.elm (r.get hr) ⬝ .elm (u.get hu) ⬝ .elm (f.get hf) ⬝ (pred.elm ⬝ .elm (m.get hm)) ⬝ (Expr.S ⬝ Expr.K ⬝ Expr.K))]
+    := by
+    simp [R]
+    rw [eval_abstr_app, eval_abstr_app, eval_abstr_app, eval_abstr_app, eval_override, eval_override, eval_override, eval_override] <;> try assumption
+    simp [eval]
+
+  @[simp]
+  def df_R : (R : Part A) ⇓ := by simp [R] ; apply df_abstr
+
+  def R.elm {Γ} : Expr Γ A := .elm (R.get df_R)
 
   /-- Primitive recursion -/
-  def primrec : Part A := sorry
+  def primrec : Part A := [pca: ≪`x≫ ≪`f≫ ≪`m≫ (Z.elm ⬝ R.elm) ⬝ var `x ⬝ var `f ⬝ var `m ⬝ I.elm]
+
+  @[simp]
+  theorem eq_primrec (u f m : Part A) :
+    u ⇓ → f ⇓ → m ⇓ → primrec ⬝ u ⬝ f ⬝ m = (Z ⬝ R) ⬝ u ⬝ f ⬝ m ⬝ I := by
+      intros hu hf hm
+      simp [primrec]
+      rw [eval_abstr_app, eval_abstr_app, eval_abstr_app, eval_override, eval_override, eval_override] <;> try assumption
+      simp [eval]
 
   theorem eq_primrec_zero (n : ℕ) (u f : Part A) : u ⇓ → f ⇓ → primrec ⬝ u ⬝ f ⬝ numeral 0 = u := by
-    sorry
+    intro hu hf
+    rw [numeral, eq_primrec, eq_Z, eq_R] <;> simp [hu, hf]
+    rw [eq_K, eq_K]
+    · assumption
+    · simp
+    · apply df_K₁ ; assumption
+    · apply df_abstr
 
-  theorem eq_primrec_succ (n : ℕ) (u f : Part A) : u ⇓ → f ⇓ →
-    primrec ⬝ u ⬝ f ⬝ numeral n.succ = f ⬝ numeral n ⬝ (primrec ⬝ u ⬝ f ⬝ numeral n)
-    := by
+  theorem eq_primrec_succ (n : ℕ) (u f n : Part A) : u ⇓ → f ⇓ → n ⇓ →
+    primrec ⬝ u ⬝ f ⬝ (succ ⬝ n) = f ⬝ n ⬝ (primrec ⬝ u ⬝ f ⬝ n) := by
     sorry
+    -- intros hu hf hn
+    -- rw [succ, primrec] <;> simp [hu, hf, hn]
+    -- repeat rw [eval_abstr_app] <;> try simp [hu, hf, hn]
+    -- repeat rw [eval_override] <;> try simp [hu, hf, hn]
+
+    -- repeat rw [Part.some_get] <;> try simp [hu, hf, hn]
+
+    -- rw [eq_Z, eq_R, eq_fst, eq_pair, eq_K, eq_fal] <;> try simp [hu, hf, hn]
+    -- rw [eval_abstr_app, eval_override] <;> try simp [hu, hf, hn]
+    -- simp [eval, hu, hf, hn]
+    -- · congr 1 <;> try simp [hu, hf, hn] <;> try simp [hu, hf, hn]
+
+    --   repeat rw [eq_S] <;> try simp [hu, hf, hn]
+    --   rw [eq_Z, I] <;> try simp [hu, hf, hn]
+
+    -- · apply df_abstr
+
+
+
+
+
 
 end PCA

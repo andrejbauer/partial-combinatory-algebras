@@ -24,7 +24,7 @@ with a separate claim that they are total.
 
 -/
 
-/-- A notation for definedness of a partial element (we find writing `x.Dom` a bit silly). -/
+/-- A notation for totality of a partial element (we find writing `x.Dom` a bit silly). -/
 notation:50 u:max " ⇓ " => Part.Dom u
 
 /-- A generic notation for a left-associative binary operation. -/
@@ -137,6 +137,7 @@ namespace Expr
   | app e₁ e₂ => S ⬝ (abstr x e₁) ⬝ (abstr x e₂)
 
   /-- An abstraction is defined. -/
+  @[simp]
   lemma df_abstr (x : Γ) (e : Expr Γ A) : defined (abstr x e) := by
     intro η
     induction e
@@ -172,6 +173,19 @@ namespace Expr
     calc
      _ = eval η (abstr x e ⬝ elm (u.get hu)) := by simp [eval]
      _ = eval (override x (u.get hu) η) e := by apply eval_abstr
+
+  @[simp]
+  lemma eval_override (η : Γ → A) (x : Γ) (a : A) (e : Expr Γ A) :
+    eval (override x a η) e = eval η (subst x a e) := by
+    induction e
+    case K => simp [eval]
+    case S => simp [eval]
+    case elm => simp [eval]
+    case var y =>
+      cases (decEq y x)
+      case isFalse p => simp [eval, subst, p]
+      case isTrue p => simp [eval, subst, p]
+    case app e₁ e₂ ih₁ ih₂ => simp [eval, ih₁, ih₂]
 
   /-- Compile an expression to a partial element, substituting
       the default value for any variables occurring in e. -/

@@ -150,7 +150,7 @@ Given a set of variables $\Gamma$ and a set~$A$, a \emph{valuation} is a map $\e
   %
   \leanok
   \lean{Expr.abstr}
-  \uses{def:expression, def:extension, def:PCA}
+  \uses{def:expression, def:override, def:PCA}
   %
   The \emph{abstraction} of an expression $e \in \Expr \Gamma A$ 
   with respect to a variable $x \in \Gamma$
@@ -185,7 +185,7 @@ Given a set of variables $\Gamma$ and a set~$A$, a \emph{valuation} is a map $\e
   %
   \leanok
   \lean{Expr.eval_abstr}
-  \uses{def:expression, def:evaluation, def:abstraction, def:override
+  \uses{def:expression, def:evaluation, def:abstraction, def:override}
   %
   Let $x \in \Gamma$ and $e \in \Expr {(\Gamma \cup \{x\})} A$.
   Then for every $a \in A$ and $\eta : \Gamma \to A$
@@ -246,7 +246,7 @@ We call the elements of~$A$ accomplishing various programming tasks \emph{combin
 
 \begin{definition}[Numerals]
   \label{def:combinator-nat}
-  \lean{PCA.numeral, PCA.succ, PCA.primrec}
+  \lean{PCA.numeral, PCA.succ, PCA.primrec, PCA.eq_primrec_zero, PCA.eq_primrec_succ}
   \uses{def:PCA}
   %
   For each $n \in \NN$ there is $\overline{n} \in A$, as well as combinators $\comb{succ}, \comb{primrec} \in A$
@@ -265,11 +265,14 @@ We call the elements of~$A$ accomplishing various programming tasks \emph{combin
   %
   \label{def:combinator-fix}
   \uses{def:PCA}
+  \lean{PCA.Z, PCA.df_Z, PCA.eq_Z}
   %
-  There is a combinator $\comb{Y} \in A$ such that, for all $f, a \in A$,
+  There is a combinator $\comb{Z} \in A$ such that, for all $f, a \in A$,
   %
   \begin{equation*}
-    \comb{Y} \, f \, a = f (\comb{Y} \, f) \, a.
+    \defined{\comb{Z} \, f},
+    \qquad\text{and}\qquad
+    \comb{Z} \, f \, a = f (\comb{Z} \, f) \, a.
   \end{equation*}
 \end{definition}
 

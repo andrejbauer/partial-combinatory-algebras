@@ -2,4 +2,6 @@
 -- Import modules here that should be built as part of the library.
 
 import PartialCombinatoryAlgebras.Basic
+import PartialCombinatoryAlgebras.PartialCombinatoryAlgebra
 import PartialCombinatoryAlgebras.Programming
+import PartialCombinatoryAlgebras.CombinatoryAlgebra

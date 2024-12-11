@@ -1,15 +1,34 @@
 import PartialCombinatoryAlgebras.Basic
+import PartialCombinatoryAlgebras.PartialCombinatoryAlgebra
+
+/-! ## Programming with PCAs
+
+  A (non-trivial) PCA is Turing-complete in the sense that it implements
+  every partial computable function. We develop here basic programming
+  constructs that witness this fact:
+
+  * the identity combinatory `I`
+  * ordered pairs `pair` with projections `fst` and `snd`
+  * booleans `true`, `false` and the conditional statement `ite`
+  * fixed-point combinators `Z` and `Y`
+  * Curry numerals `numeral n` with `zero`, successor `succ`, predecessor `pred` and primitive recursion `primrec`
+  * TODO: general recursion (but it should be easy given what we have)
+
+  For any of the combinators so defined, say `C`, we also prove two lemmas: `df_C` characterizes totality of
+  expressions involving `C`, and `eq_C` gives the characteristic equation for `C`. These lemmas are automatically
+  used by `simp`.
+-/
 
 namespace PCA
-
-  open Expr
 
   universe u
   variable {A : Type u} [PCA A]
 
+  /-- The identity combinator -/
   def I : Part A := S ⬝ K ⬝ K
 
-  def I.elm {Γ} : Expr Γ A := .elm (I.get (PCA.df_S₂ PCA.df_K₀ PCA.df_K₀))
+  /-- The expression denoting the identity combinator -/
+  def Expr.I {Γ} : Expr Γ A := .S ⬝ .K ⬝ .K
 
   @[simp]
   theorem df_I : (I : Part A) ⇓ := by
@@ -17,9 +36,11 @@ namespace PCA
 
   @[simp]
   theorem eq_I {u : Part A} : u ⇓ → I ⬝ u = u := by
-    intro hu ; simp [I, hu, eval]
+    intro hu ; simp [eq_S, eq_K, I, hu, eval]
 
-  def K' : Part A := K ⬝ (S ⬝ K ⬝ K)
+  def K' : Part A := K ⬝ I
+
+  def Expr.K' {Γ} : Expr Γ A := .K ⬝ .I
 
   @[simp]
   theorem df_K' : (K' : Part A) ⇓ := by simp [K', eval]
@@ -28,11 +49,11 @@ namespace PCA
   theorem eq_K' (u v : Part A) :
     u ⇓ → v ⇓ → K' ⬝ u ⬝ v = v := by
     intros hu hv
-    simp [K', eval, hu, hv]
+    simp [K', eq_S, eq_K, eval, hu, hv]
 
   /-! ### Pairing -/
 
-  def pair : Part A := [pca: ≪`x≫ ≪`y≫ ≪`z≫ var `z ⬝ var `x ⬝ var `y]
+  def pair : Part A := [pca: ≪`x≫ ≪`y≫ ≪`z≫ .var `z ⬝ .var `x ⬝ .var `y]
 
   @[simp]
   theorem df_pair : (pair : Part A) ⇓ := by
@@ -63,7 +84,7 @@ namespace PCA
     simp [eval]
     rw [Part.some_get, Part.some_get, Part.some_get] <;> assumption
 
-  def fst : Part A := [pca: ≪ `x ≫ var `x ⬝ Expr.K]
+  def fst : Part A := [pca: ≪ `x ≫ .var `x ⬝ .K]
 
   def fst.elm {Γ}: Expr Γ A := .elm (fst.get (df_abstr _ _ _))
 
@@ -77,7 +98,7 @@ namespace PCA
     rw [Part.some_get]
     assumption
 
-  def snd : Part A := [pca: ≪ `x ≫ var `x ⬝ (Expr.K ⬝ (Expr.S ⬝ Expr.K ⬝ Expr.K))]
+  def snd : Part A := [pca: ≪ `x ≫ .var `x ⬝ .K']
 
   def snd.elm {Γ} : Expr Γ A := .elm (snd.get (df_abstr _ _ _))
 
@@ -88,7 +109,9 @@ namespace PCA
     simp [snd]
     rw [eval_abstr_app, eval_override]
     simp [eval]
-    rw [Part.some_get] <;> simp [hu, K']
+    rw [Part.some_get]
+    rfl
+    assumption
 
   @[simp]
   def eq_fst_pair (u v : Part A) : u ⇓ → v ⇓ → fst ⬝ (pair ⬝ u ⬝ v) = u := by
@@ -129,11 +152,11 @@ namespace PCA
   @[simp]
   theorem eq_ite_tru (u v : Part A) : u ⇓ → v ⇓ → ite ⬝ tru ⬝ u ⬝ v = u := by
     intros hu hv
-    simp [hu, hv, ite, tru]
+    simp [eq_K, hu, hv, ite, tru]
 
   /-! ### The fixed point combinator -/
 
-  def X : Part A := [pca: ≪`x≫ ≪`y≫ ≪`z≫ var `y ⬝ (var `x ⬝ var `x ⬝ var `y) ⬝ var `z]
+  def X : Part A := [pca: ≪`x≫ ≪`y≫ ≪`z≫ .var `y ⬝ (.var `x ⬝ .var `x ⬝ .var `y) ⬝ .var `z]
 
   @[simp]
   theorem df_X : (X : Part A) ⇓ := by
@@ -179,7 +202,7 @@ namespace PCA
     simp [Z, hu, hv]
     rw [eq_X] <;> simp [hu, hv]
 
-  def W : Part A := [pca: ≪`x≫ ≪`y≫ var `y ⬝ (var `x ⬝ var `x ⬝ var `y)]
+  def W : Part A := [pca: ≪`x≫ ≪`y≫ .var `y ⬝ (.var `x ⬝ .var `x ⬝ .var `y)]
 
   @[simp]
   def df_W : (W : Part A) ⇓ := by simp [W] ; apply df_abstr
@@ -241,10 +264,10 @@ namespace PCA
 
   @[simp]
   theorem eq_iszero_succ (n : Nat): iszero ⬝ (numeral n.succ) = (fal : Part A) := by
-    simp [iszero, numeral]
+    simp [iszero, numeral, eq_K]
 
   /-- Predecessor of a Curry numeral -/
-  def pred : Part A := [pca: ≪`x≫ (fst.elm ⬝ var `x) ⬝ I.elm ⬝ (snd.elm ⬝ var `x)]
+  def pred : Part A := [pca: ≪`x≫ (fst.elm ⬝ .var `x) ⬝ .I ⬝ (snd.elm ⬝ .var `x)]
 
   @[simp]
   def df_pred : (pred : Part A) ⇓ := by simp [pred] ; apply df_abstr
@@ -257,18 +280,18 @@ namespace PCA
     intro hu
     simp [pred]
     rw [eval_abstr_app, eval_override] <;> try assumption
-    simp [eval]
+    simp [eval] ; rfl
 
   @[simp]
   theorem eq_pred_succ (u : Part A) : u ⇓ → pred ⬝ (succ ⬝ u) = u := by
     intro hu
     simp [pred]
-    rw [eval_abstr_app, eval_override] <;> simp [eval, succ, fal, hu]
+    rw [eval_abstr_app, eval_override] <;> simp [eq_K, eq_K', eval, succ, fal, hu]
 
   def primrec.R : Part A := [pca:
     ≪`r≫ ≪`x≫ ≪`f≫ ≪`m≫
-      (fst.elm ⬝ var `m) ⬝ (Expr.K ⬝ var `x) ⬝
-      (≪ `y ≫ var `f ⬝ (pred.elm ⬝ var `m) ⬝ (var `r ⬝ var `x ⬝ var `f ⬝ (pred.elm ⬝ var `m) ⬝ (Expr.S ⬝ Expr.K ⬝ Expr.K)))
+      (fst.elm ⬝ .var `m) ⬝ (.K ⬝ .var `x) ⬝
+      (≪ `y ≫ .var `f ⬝ (pred.elm ⬝ .var `m) ⬝ (.var `r ⬝ .var `x ⬝ .var `f ⬝ (pred.elm ⬝ .var `m) ⬝ .I))
   ]
 
   def primrec.eq_R (r u f m : Part A) (hr : r ⇓) (hu : u ⇓) (hf : f ⇓) (hm : m ⇓) :
@@ -286,7 +309,7 @@ namespace PCA
   def primrec.R.elm {Γ} : Expr Γ A := .elm (R.get df_R)
 
   /-- Primitive recursion -/
-  def primrec : Part A := [pca: ≪`x≫ ≪`f≫ ≪`m≫ (Z.elm ⬝ primrec.R.elm) ⬝ var `x ⬝ var `f ⬝ var `m ⬝ I.elm]
+  def primrec : Part A := [pca: ≪`x≫ ≪`f≫ ≪`m≫ (Z.elm ⬝ primrec.R.elm) ⬝ .var `x ⬝ .var `f ⬝ .var `m ⬝ .I]
 
   @[simp]
   theorem eq_primrec (u f m : Part A) :
@@ -294,7 +317,7 @@ namespace PCA
       intros hu hf hm
       simp [primrec]
       rw [eval_abstr_app, eval_abstr_app, eval_abstr_app, eval_override, eval_override, eval_override] <;> try assumption
-      simp [eval]
+      simp [eval] ; rfl
 
   theorem eq_primrec_zero (u f : Part A) : u ⇓ → f ⇓ → primrec ⬝ u ⬝ f ⬝ numeral 0 = u := by
     intro hu hf

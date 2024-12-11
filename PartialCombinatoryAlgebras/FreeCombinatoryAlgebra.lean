@@ -1,4 +1,5 @@
 import PartialCombinatoryAlgebras.Basic
+import PartialCombinatoryAlgebras.PartialCombinatoryAlgebra
 
 /-! # Free (total) combinatory algebra -/
 
@@ -71,7 +72,7 @@ instance CAisApplicativeStructure : PartialApplication carrier where
 @[simp]
 theorem df_app (u v : Part carrier) : u ⇓ → v ⇓ → (u ⬝ v) ⇓ := by
   intros hu hv
-  unfold raise₂
+  sorry
 
 instance CAisPCA : PCA carrier where
   K := mk .K
@@ -83,8 +84,8 @@ instance CAisPCA : PCA carrier where
   df_S₁ hu := by simp [hu]
   df_S₂ hu hv := by simp [hu, hv]
 
-  eq_K u v hu hv := by
+  eq_K u v hu hv := by sorry
 
-  eq_S u v w _ _ _ := sorry
+  eq_S u v w _ _ _ := by sorry
 
 end FreeCombinatoryAlgebra

@@ -5,3 +5,4 @@ import PartialCombinatoryAlgebras.Basic
 import PartialCombinatoryAlgebras.PartialCombinatoryAlgebra
 import PartialCombinatoryAlgebras.Programming
 import PartialCombinatoryAlgebras.CombinatoryAlgebra
+import PartialCombinatoryAlgebras.FreeCombinatoryAlgebra

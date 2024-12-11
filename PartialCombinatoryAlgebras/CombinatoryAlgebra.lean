@@ -1,5 +1,7 @@
+import Mathlib.Tactic.NthRewrite
 import Mathlib.Data.Part
 import PartialCombinatoryAlgebras.Basic
+import PartialCombinatoryAlgebras.PartialCombinatoryAlgebra
 
 /-- A (total) combinatory structure on a set `A`. -/
 class CA (A : Type*) extends HasDot A where
@@ -7,9 +9,6 @@ class CA (A : Type*) extends HasDot A where
   S : A
   eq_K : ∀ {a b : A}, K ⬝ a ⬝ b = a
   eq_S : ∀ (a b c : A), S ⬝ a ⬝ b ⬝ c = (a ⬝ c) ⬝ (b ⬝ c)
-
-attribute [simp] PCA.eq_K
-attribute [simp] PCA.eq_S
 
 /-- Missing from `Part` -/
 @[simps]

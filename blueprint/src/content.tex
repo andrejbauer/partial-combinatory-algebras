@@ -78,7 +78,7 @@ strictness conditions stating that $\defined{u \cdot_A v}$ implies $\defined{u}$
   \label{def:expression}
   %
   \leanok
-  \lean{Expr}
+  \lean{PCA.Expr}
   %
   Given a set $\Gamma$ of \emph{variables} and a set $A$ of elements, the
   \emph{expressions} $\Expr \Gamma A$ are generated inductively by the following clauses:
@@ -99,7 +99,7 @@ Given a set of variables $\Gamma$ and a set~$A$, a \emph{valuation} is a map $\e
 \begin{definition}
   \label{def:override}%
   \leanok
-  \lean{Expr.override}
+  \lean{PCA.override}
   %
   Given a valuation $\eta : \Gamma \to A$, $x \in A$ and $a \in a$, we may \emph{override} $\eta$
   to get a valuation $\override \eta x a : \Gamma \to A$ such that
@@ -117,7 +117,7 @@ Given a set of variables $\Gamma$ and a set~$A$, a \emph{valuation} is a map $\e
   \label{def:evaluation}
   %
   \leanok
-  \lean{Expr.eval}
+  \lean{PCA.eval}
   %
   \uses{def:expression, def:PCA}
   %
@@ -137,7 +137,7 @@ Given a set of variables $\Gamma$ and a set~$A$, a \emph{valuation} is a map $\e
   \label{def:expression-defined}
   %
   \leanok
-  \lean{Expr.defined}
+  \lean{PCA.defined}
   \uses{def:expression, def:evaluation}
   %
   An expression $e \in \Expr \Gamma A$ is \emph{defined} when $\defined{\eval{e}{\eta}}$
@@ -149,7 +149,7 @@ Given a set of variables $\Gamma$ and a set~$A$, a \emph{valuation} is a map $\e
   \label{def:abstraction}
   %
   \leanok
-  \lean{Expr.abstr}
+  \lean{PCA.abstr}
   \uses{def:expression, def:override, def:PCA}
   %
   The \emph{abstraction} of an expression $e \in \Expr \Gamma A$ 
@@ -169,7 +169,7 @@ Given a set of variables $\Gamma$ and a set~$A$, a \emph{valuation} is a map $\e
   \label{prop:abstraction-defined}
   %
   \leanok
-  \lean{Expr.df_abstr}
+  \lean{PCA.df_abstr}
   \uses{def:expression-defined, def:abstraction}
   %
   An abstraction $\abstr{x} e$ is defined.
@@ -184,7 +184,7 @@ Given a set of variables $\Gamma$ and a set~$A$, a \emph{valuation} is a map $\e
   \label{prop:abstraction-equal}
   %
   \leanok
-  \lean{Expr.eval_abstr}
+  \lean{PCA.eval_abstr}
   \uses{def:expression, def:evaluation, def:abstraction, def:override}
   %
   Let $x \in \Gamma$ and $e \in \Expr {(\Gamma \cup \{x\})} A$.
@@ -307,6 +307,39 @@ We call the elements of~$A$ accomplishing various programming tasks \emph{combin
   Every general recursive map $f : \NN \parto \NN$ is represented in the following sense:
   there is $a \in A$ such that, for all $n \in \NN$, if $\defined{f(n)}$ then $\numeral{f(n)} = a \cdot \numeral{n}$.
 \end{theorem}
+
+\section{(Total) combinatory algebras}
+\label{sec:total-comb-algebr}
+
+\begin{definition}
+  \label{def:CA}
+  \lean{CA}
+  \leanok
+  %
+  A \emph{(total) combinatory algebra (CA)} is given by a carrier set $A$ and a \emph{total} binary operation
+  ${-} \cdot {-} : A \times A \to A$, such that there are $\combK, \combS$ satisfying the characteristic
+  equations
+  %
+  \begin{equation*}
+    \combK \cdot x \cdot y = x
+    \qquad\text{and}\qquad
+    \combS \cdot x \cdot y \cdot z = (x \cdot z) \cdot (y \cdot z).
+  \end{equation*}
+\end{definition}
+
+\begin{proposition}
+  \label{prop:CAisPCA}
+  \lean{CA.isPCA}
+  \uses{PCA}
+  \leanok
+  %
+  Every combinatory algebra is a partial combinatory algebra.
+\end{proposition}
+
+\begin{proof}
+  \leanok
+  Simply reuse the total application as the partial one.
+\end{proof}
 
 \section{Examples of PCAs}
 

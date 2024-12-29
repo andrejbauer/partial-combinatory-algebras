@@ -13,11 +13,13 @@ inductive Expr where
 
 instance exprHasDot : HasDot Expr where dot := Expr.app
 
-/-- Provable equality on the free combinatory algebra -/
+/-- The equational axioms of the free combinatory algebra.
+    Symmetry and transitivity are commented out because
+    so far we have not needed them. -/
 inductive eq : Expr → Expr → Prop where
 | refl : ∀ {a}, eq a a
-| sym : ∀ {a b}, eq a b → eq b a
-| trans : ∀ {a b c}, eq a b → eq b c → eq a c
+-- | sym : ∀ {a b}, eq a b → eq b a
+-- | trans : ∀ {a b c}, eq a b → eq b c → eq a c
 | app : ∀ {a b c d}, eq a b → eq c d → eq (a ⬝ c) (b ⬝ d)
 | K : ∀ {a b}, eq (.app (.app .K a) b) a
 | S : ∀ {a b c}, eq (.app (.app (.app .S a) b) c) (.app (.app a c) (.app b c))
@@ -54,7 +56,7 @@ theorem eq_mk_app (a b : Expr) : mk a ⬝ mk b = mk (a ⬝ b) := by
 
 end FreeCA
 
-/-- Every combinatory algebra is a partial combinatory algebra -/
+/-- The free combinatory algebra -/
 instance FreeCA : CA FreeCA.carrier where
   K := FreeCA.mk .K
   S := FreeCA.mk .S

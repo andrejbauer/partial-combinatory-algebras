@@ -8,7 +8,7 @@ class CA (A : Type*) extends HasDot A where
   K : A
   S : A
   eq_K : ∀ {a b : A}, K ⬝ a ⬝ b = a
-  eq_S : ∀ (a b c : A), S ⬝ a ⬝ b ⬝ c = (a ⬝ c) ⬝ (b ⬝ c)
+  eq_S : ∀ {a b c : A}, S ⬝ a ⬝ b ⬝ c = (a ⬝ c) ⬝ (b ⬝ c)
 
 /-- Missing from `Part` -/
 @[simps]

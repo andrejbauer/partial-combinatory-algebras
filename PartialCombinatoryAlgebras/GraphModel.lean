@@ -46,7 +46,17 @@ section GraphModel
   def isContinuous (f : Set α → Set α) :=
     ∀ (S : Set α) (x : α), x ∈ f S ↔ ∃ y : α, toSet y ⊆ S ∧ (x ∈ f (toSet y))
 
-  def id_isContinuous : isContinuous (@id (Set α)) := by
+  def isContinuous_monotone {f : Set α → Set α} :
+    isContinuous f → ∀ (S T), S ⊆ T → f S ⊆ f T := by
+    intro Cf S T ST x xfS
+    obtain ⟨y, yS, xfy⟩ := (Cf S x).mp xfS
+    apply (Cf T x).mpr
+    use y
+    constructor
+    · intro z zy ; exact ST (yS zy)
+    · assumption
+
+  def isContinuous.id : isContinuous (@id (Set α)) := by
     intros S x
     simp
     constructor
@@ -64,7 +74,7 @@ section GraphModel
       rintro ⟨y, yS, xy⟩
       exact yS xy
 
-  def const_isContinuous (T : Set α) : isContinuous (fun (_ : Set α) => T) := by
+  def isContinuous.const (T : Set α) : isContinuous (fun (_ : Set α) => T) := by
     intro S x
     simp
     intro xT
@@ -72,9 +82,32 @@ section GraphModel
     rw [eq_toSet_fromList]
     rintro x ⟨⟩
 
+  def isContinuous.comp (f g : Set α → Set α) :
+    isContinuous f → isContinuous g → isContinuous (f ∘ g) := by
+    intro Cf Cg S x
+    constructor
+    · intro xfgS
+      obtain ⟨y, ygS, xfy⟩ := (Cf (g S) x).mp xfgS
+      sorry
+    · sorry
+
   /-- The graph of a function -/
   def graph (f : Set α → Set α) : Set α :=
-    fun a => fst a ∈ f (toSet (snd a))
+    fun x => fst x ∈ f (toSet (snd x))
+
+  def isContinuous.binary (f : Set α → Set α → Set α) :
+    (∀ S, isContinuous (f S)) →
+    (∀ T, isContinuous (fun S => f S T)) →
+    isContinuous (fun S => graph (f S)) := by
+    intro fC₁ fC₂ S x
+    constructor
+    · exact (fC₂ (toSet (snd x)) S (fst x)).mp
+    · intro ⟨y, yS, H⟩
+      apply (fC₁ S (toSet (snd x)) (fst x)).mpr
+      use (snd x)
+      constructor
+      · trivial
+      · exact isContinuous_monotone (fC₂ (toSet (snd x))) _ _ yS H
 
   def apply (S : Set α) : Set α → Set α :=
     fun T x => ∃ y, toSet y ⊆ T ∧ pair x y ∈ S
@@ -101,7 +134,7 @@ section GraphModel
     apply apply_monotone₁ ST
     apply apply_monotone₂ UV xSU
 
-  def apply_isContinuous (T : Set α) : isContinuous (apply T) := by
+  def isContinuous.apply (T : Set α) : isContinuous (apply T) := by
     intros S x
     constructor
     · rintro ⟨y, yS, xyT⟩
@@ -138,21 +171,11 @@ section GraphModel
   theorem eq_K {A B : Set α} : K ⬝ A ⬝ B = A := by
     simp [K, Listing.hasDot]
     rw [eq_apply_graph, eq_apply_graph]
-    · apply const_isContinuous
-    · intros B x
-      simp [Membership.mem, Set.Mem, graph]
-      constructor
-      · intro Bx
-        use (fromList [fst x])
-        constructor
-        · rw [eq_toSet_fromList]
-          rintro y (_|_)
-          case head => assumption
-          case tail H => cases H
-        · rw [eq_toSet_fromList]
-          constructor
-      · rintro ⟨y, yB, H⟩
-        exact yB H
+    · apply isContinuous.const
+    · apply isContinuous.binary
+      · exact isContinuous.const
+      · intro
+        exact isContinuous.id
 
   def S : Set α := graph (fun A => graph (fun B => graph (fun C => (A ⬝ C) ⬝ (B ⬝ C))))
 

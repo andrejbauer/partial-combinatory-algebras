@@ -79,7 +79,8 @@ section GraphModel
   def apply (S : Set α) : Set α → Set α :=
     fun T x => ∃ y, toSet y ⊆ T ∧ pair x y ∈ S
 
-  instance : HasDot (Set α) where dot := apply
+  @[reducible]
+  instance Listing.hasDot : HasDot (Set α) where dot := apply
 
   def apply_monotone₁ {S T U : Set α} : S ⊆ T → apply S U ⊆ apply T U := by
     rintro ST U ⟨y, yU, xyS⟩
@@ -135,43 +136,32 @@ section GraphModel
   def K : Set α := graph (fun A => graph (fun _ => A))
 
   theorem eq_K {A B : Set α} : K ⬝ A ⬝ B = A := by
-    unfold K graph
-    ext x
-    simp [Membership.mem, Set.Mem, HasDot.dot]
-    constructor
-    · rintro ⟨y, yB, ⟨z, zA, xyzK⟩⟩
-      simp [Membership.mem, Set.Mem, eq_fst_pair, eq_snd_pair] at xyzK
-      exact (zA xyzK)
-    · intro xA
-      use (fromList [])
+    simp [K, Listing.hasDot]
+    rw [eq_apply_graph, eq_apply_graph]
+    · apply const_isContinuous
+    · intros B x
+      simp [Membership.mem, Set.Mem, graph]
       constructor
-      · intro x
-        rw [eq_toSet_fromList]
-        rintro ⟨⟩
-      · use (fromList [x])
+      · intro Bx
+        use (fromList [fst x])
         constructor
         · rw [eq_toSet_fromList]
-          intro y H
-          cases H
+          rintro y (_|_)
           case head => assumption
           case tail H => cases H
-        · simp [Membership.mem, Set.Mem, eq_fst_pair, eq_snd_pair]
+        · rw [eq_toSet_fromList]
           constructor
+      · rintro ⟨y, yB, H⟩
+        exact yB H
 
   def S : Set α := graph (fun A => graph (fun B => graph (fun C => (A ⬝ C) ⬝ (B ⬝ C))))
 
   theorem eq_S {A B C : Set α} : S ⬝ A ⬝ B ⬝ C = (A ⬝ C) ⬝ (B ⬝ C) := by
-    unfold S graph
-    ext x
-    simp [Membership.mem, Set.Mem, HasDot.dot]
-    constructor
-    · rintro ⟨y, yC, ⟨z, zB, ⟨w, wA, H⟩⟩⟩
-      simp [Membership.mem, Set.Mem, eq_fst_pair, eq_snd_pair] at H
-      have wyAC : apply (toSet w) (toSet y) ⊆ apply A C := apply_monotone wA yC
-      have zyBC : apply (toSet z) (toSet y) ⊆ apply B C := apply_monotone zB yC
-      apply apply_monotone wyAC zyBC H
-    · rintro ⟨y, yBC, ⟨z, zC, H⟩⟩
-      sorry
+    simp [S, Listing.hasDot]
+    rw [eq_apply_graph, eq_apply_graph, eq_apply_graph]
+    · sorry
+    · sorry
+    · sorry
 
   /-- The graph model -/
   instance isCA : CA (Set α) where

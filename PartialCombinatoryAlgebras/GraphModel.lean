@@ -82,14 +82,64 @@ section GraphModel
     rw [eq_toSet_fromList]
     rintro x ⟨⟩
 
+  lemma isContinuous_finite {f : Set α → Set α} (ys : List α) (S : Set α) :
+    isContinuous f → (∀ y, y ∈ ys → y ∈ f S) → ∃ z, toSet z ⊆ S ∧ ∀ y, y ∈ ys → y ∈ f (toSet z) := by
+    intro Cf ysfS
+    induction ys
+    case nil =>
+      use (fromList [])
+      constructor
+      · rw [eq_toSet_fromList] ; rintro _ ⟨⟩
+      · rintro _ ⟨⟩
+    case cons y ys ih =>
+      have H : ∀ z ∈ ys, z ∈ f S := by
+        intro z zys
+        apply ysfS
+        exact List.mem_cons_of_mem _ zys
+      obtain ⟨zs, zsS, ysfzs⟩ := ih H
+      obtain ⟨z, zS, yfz⟩ := (Cf S y).mp (ysfS y (List.mem_cons_self _ _))
+      use (fromList (toList z ++ toList zs))
+      rw [eq_toSet_fromList]
+      constructor
+      · intro w
+        simp [Membership.mem, Set.Mem]
+        intro wzws
+        cases List.mem_append.mp wzws
+        case inl => apply zS ; assumption
+        case inr H => apply zsS ; assumption
+      · intro w wyys
+        cases wyys
+        case head =>
+          apply isContinuous_monotone Cf (toSet z)
+          · intro w wz
+            apply List.mem_append.mpr ; left ; exact wz
+          · assumption
+        case tail =>
+          apply isContinuous_monotone Cf (toSet zs)
+          · intro w wzs
+            apply List.mem_append.mpr ; right ; exact wzs
+          · apply ysfzs ; assumption
+
   def isContinuous.comp (f g : Set α → Set α) :
     isContinuous f → isContinuous g → isContinuous (f ∘ g) := by
     intro Cf Cg S x
     constructor
     · intro xfgS
       obtain ⟨y, ygS, xfy⟩ := (Cf (g S) x).mp xfgS
-      sorry
-    · sorry
+      unfold toSet at ygS
+      obtain ⟨z, zS, ygz⟩ := isContinuous_finite (toList y) S Cg ygS
+      use z
+      constructor
+      · assumption
+      · apply isContinuous_monotone Cf (toSet y) (g (toSet z))
+        · intro z zy
+          apply ygz
+          apply zy
+        · assumption
+    · rintro ⟨y, yS, xfgy⟩
+      apply isContinuous_monotone Cf (g (toSet y)) (g S)
+      · exact isContinuous_monotone Cg _ _ yS
+      · assumption
 
   /-- The graph of a function -/
   def graph (f : Set α → Set α) : Set α :=

@@ -3,22 +3,22 @@ import Mathlib.Data.SetLike.Basic
 import PartialCombinatoryAlgebras.Basic
 import PartialCombinatoryAlgebras.CombinatoryAlgebra
 
-/-! We show that a pairing function `A × A → A` on a set `A` induces
-    a combinatory algebra structure on the power set of `A`.
+/-! We derive from a given section-retraction `List α → α` the
+    combinatory algebra structure on `Set α`.
 -/
 
+/-- An encoding of lists of `α`'s as `α`. -/
 class Listing (α : Type) where
   fromList : List α → α
   toList : α → List α
   eq_list : ∀ xs, toList (fromList xs) = xs
 
-instance Listing.membership {α : Type} [Listing α] : Membership α α where
-  mem x y := x ∈ toList y
-
+/-- A set equipped with `Listing` has as its canonical element the encoding of `[]`. -/
 instance Listing.inhabited {α : Type} [Listing α] : Inhabited α where
   default := fromList []
 
-/-- [x] qua finite set when decoded to a list -/
+/-- [x] qua subset of elements listed by `x`. -/
+@[reducible]
 def toSet {α : Type} [Listing α] (x : α) : Set α := (Listing.toList x).Mem
 
 @[simp]
@@ -26,15 +26,20 @@ theorem eq_toSet_fromList {α : Type} [Listing α] {ys : List α} :
   toSet (Listing.fromList ys) = ys.Mem := by
   ext ; unfold toSet ; rw [Listing.eq_list]
 
+/-- We encode pairs as lists of length two. -/
 def Listing.pair {α : Type} [Listing α] (x y : α) : α := fromList [x, y]
 
+/-- The first projection from a pair.  -/
 def Listing.fst {α : Type} [Listing α] (x : α) : α := (toList x).head!
 
+/-- The second projection from a pair. -/
 def Listing.snd {α : Type} [Listing α] (x : α) : α := (toList x).get! 1
 
+/-- Computation rule for the first projection from a pair. -/
 theorem Listing.eq_fst_pair {α : Type} [Listing α] (x y : α) : fst (pair x y) = x
   := by simp [fst, snd, pair, eq_list]
 
+/-- Computation rule for the second projection from a pair. -/
 theorem Listing.eq_snd_pair {α : Type} [Listing α] (x y : α) : snd (pair x y) = y
   := by simp [fst, snd, pair, eq_list]
 
@@ -43,11 +48,18 @@ section GraphModel
   variable {α : Type} [Listing α]
   open Listing
 
-  def isContinuous (f : Set α → Set α) :=
+  /-- A map `Set α → Set α` is continuous when its values are determined
+      on finite subsets. This is continuity in the sense of Scott topology, but
+      we avoid developing a general theory of domains, so we will specialize all
+      definitions to the situation at hand. -/
+  def continuous (f : Set α → Set α) :=
     ∀ (S : Set α) (x : α), x ∈ f S ↔ ∃ y : α, toSet y ⊆ S ∧ (x ∈ f (toSet y))
 
-  def isContinuous_monotone {f : Set α → Set α} :
-    isContinuous f → ∀ (S T), S ⊆ T → f S ⊆ f T := by
+  /-- Monotonicity of a map `Set α → Set α` with respect to subset inclusion. -/
+  def monotone (f : Set α → Set α) := ∀ S T, S ⊆ T → f S ⊆ f T
+
+  /-- A continuous map is monotone -/
+  theorem continuous_monotone {f : Set α → Set α} : continuous f → monotone f := by
     intro Cf S T ST x xfS
     obtain ⟨y, yS, xfy⟩ := (Cf S x).mp xfS
     apply (Cf T x).mpr
@@ -56,7 +68,76 @@ section GraphModel
     · intro z zy ; exact ST (yS zy)
     · assumption
 
-  def isContinuous.id : isContinuous (@id (Set α)) := by
+  /-- Continuity of a binary map -/
+  def continuous₂ (f : Set α → Set α → Set α) :=
+    ∀ S T x, x ∈ f S T ↔ ∃ y z, toSet y ⊆ S ∧ toSet z ⊆ T ∧ x ∈ f (toSet y) (toSet z)
+
+  /-- Monotonicity of a binary map. -/
+  def monotone₂ (f : Set α → Set α → Set α) :=
+    ∀ (S S' T T'), S ⊆ S' → T ⊆ T' → f S T ⊆ f S' T'
+
+  /-- A continuous binary map is monotone. -/
+  theorem continuous₂_monotone₂ {f : Set α → Set α → Set α} :
+    continuous₂ f → monotone₂ f := by
+    intro Cf S S' T T' SS' TT' x xfST
+    obtain ⟨y, z, yS, zT, xfyz⟩ := (Cf S T x).mp xfST
+    apply (Cf S' T' x).mpr
+    use y, z
+    constructor
+    · intro w wy ; exact SS' (yS wy)
+    · constructor
+      · intro w wz ; exact TT' (zT wz)
+      · assumption
+
+  /-- If a binary map is continuous in each arguments separately, then it is continuous. -/
+  theorem continuous₂_separately (f : Set α → Set α → Set α) :
+    (∀ S, continuous (f S)) →
+    (∀ T, continuous (fun S => f S T)) →
+    continuous₂ f := by
+    intro Cf₁ Cf₂ S T x
+    constructor
+    · intro xfST
+      obtain ⟨z, zT, xfSz⟩ := (Cf₁ S T x).mp xfST
+      obtain ⟨y, zS, xfyz⟩ := (Cf₂ (toSet z) S x).mp xfSz
+      use y ; use z
+    · rintro ⟨y, z, yS, zT, xfyz⟩
+      apply (Cf₁ S T x).mpr
+      use z
+      constructor
+      · assumption
+      · apply (Cf₂ (toSet z) S x).mpr
+        use y
+
+  /-- A continuous binary map is continuous as a map of its first argument -/
+  theorem continuous₂_fst (h : Set α → Set α → Set α) :
+    continuous₂ h → ∀ S, continuous (h S) := by
+    intro Ch S T x
+    constructor
+    · intro xhST
+      obtain ⟨y, z, yS, zT, xhyz⟩ :=  (Ch S T x).mp xhST
+      use z
+      constructor
+      · assumption
+      · exact continuous₂_monotone₂ Ch (toSet y) S (toSet z) (toSet z) yS (fun ⦃_⦄ a => a) xhyz
+    · rintro ⟨z, zT, xhSz⟩
+      exact continuous₂_monotone₂ Ch S S (toSet z) T (fun ⦃_⦄ a => a) zT xhSz
+
+  /-- A continuous binary map is contunuous as a map of its second argument -/
+  theorem continuous₂_snd (h : Set α → Set α → Set α) :
+    continuous₂ h → ∀ T, continuous (fun S => h S T) := by
+    intro Ch T S x
+    constructor
+    · intro xhST
+      obtain ⟨y, z, yS, zT, xhyz⟩ :=  (Ch S T x).mp xhST
+      use y
+      constructor
+      · assumption
+      · exact continuous₂_monotone₂ Ch (toSet y) (toSet y) (toSet z) T (fun ⦃_⦄ a => a) zT xhyz
+    · rintro ⟨y, yS, xhyT⟩
+      exact continuous₂_monotone₂ Ch (toSet y) S T T yS (fun ⦃_⦄ a => a) xhyT
+
+  /-- The identity map is continuous. -/
+  def continuous_id : continuous (@id (Set α)) := by
     intros S x
     simp
     constructor
@@ -74,7 +155,8 @@ section GraphModel
       rintro ⟨y, yS, xy⟩
       exact yS xy
 
-  def isContinuous.const (T : Set α) : isContinuous (fun (_ : Set α) => T) := by
+  /-- A constant map is continuous. -/
+  def continuous_const (T : Set α) : continuous (fun (_ : Set α) => T) := by
     intro S x
     simp
     intro xT
@@ -82,8 +164,11 @@ section GraphModel
     rw [eq_toSet_fromList]
     rintro x ⟨⟩
 
-  lemma isContinuous_finite {f : Set α → Set α} (ys : List α) (S : Set α) :
-    isContinuous f → (∀ y, y ∈ ys → y ∈ f S) → ∃ z, toSet z ⊆ S ∧ ∀ y, y ∈ ys → y ∈ f (toSet z) := by
+  /-- If `f` is continuous then any finite subset of `f S` is already a subset of some
+      `f S'` where `S' ⊆ S` is finite (in the statement `S'` is `toSet z`).
+      The lemma is used in the theorem showing that composition preserves continuity. -/
+  lemma continuous_finite {f : Set α → Set α} (ys : List α) (S : Set α) :
+    continuous f → (∀ y, y ∈ ys → y ∈ f S) → ∃ z, toSet z ⊆ S ∧ ∀ y, y ∈ ys → y ∈ f (toSet z) := by
     intro Cf ysfS
     induction ys
     case nil =>
@@ -102,7 +187,6 @@ section GraphModel
       rw [eq_toSet_fromList]
       constructor
       · intro w
-        simp [Membership.mem, Set.Mem]
         intro wzws
         cases List.mem_append.mp wzws
         case inl => apply zS ; assumption
@@ -110,46 +194,79 @@ section GraphModel
       · intro w wyys
         cases wyys
         case head =>
-          apply isContinuous_monotone Cf (toSet z)
+          apply continuous_monotone Cf (toSet z)
           · intro w wz
             apply List.mem_append.mpr ; left ; exact wz
           · assumption
         case tail =>
-          apply isContinuous_monotone Cf (toSet zs)
+          apply continuous_monotone Cf (toSet zs)
           · intro w wzs
             apply List.mem_append.mpr ; right ; exact wzs
           · apply ysfzs ; assumption
 
-  def isContinuous.comp (f g : Set α → Set α) :
-    isContinuous f → isContinuous g → isContinuous (f ∘ g) := by
+  /-- The composition of continuous maps is continuous. -/
+  theorem continuous_compose (f g : Set α → Set α) :
+    continuous f → continuous g → continuous (f ∘ g) := by
     intro Cf Cg S x
     constructor
     · intro xfgS
       obtain ⟨y, ygS, xfy⟩ := (Cf (g S) x).mp xfgS
       unfold toSet at ygS
-      obtain ⟨z, zS, ygz⟩ := isContinuous_finite (toList y) S Cg ygS
+      obtain ⟨z, zS, ygz⟩ := continuous_finite (toList y) S Cg ygS
       use z
       constructor
       · assumption
-      · apply isContinuous_monotone Cf (toSet y) (g (toSet z))
+      · apply continuous_monotone Cf (toSet y) (g (toSet z))
         · intro z zy
           apply ygz
           apply zy
         · assumption
     · rintro ⟨y, yS, xfgy⟩
-      apply isContinuous_monotone Cf (g (toSet y)) (g S)
-      · exact isContinuous_monotone Cg _ _ yS
+      apply continuous_monotone Cf (g (toSet y)) (g S)
+      · exact continuous_monotone Cg _ _ yS
       · assumption
+
+  /-- The composition of a binary continuous map and continuous maps is continuous. -/
+  theorem continuous₂_compose (f g : Set α → Set α) (h : Set α → Set α → Set α) :
+    continuous f →
+    continuous g →
+    continuous₂ h ->
+    continuous (fun U => h (f U) (g U)) := by
+    intros Cf Cg Ch U x
+    constructor
+    · intro xhfUgU
+      obtain ⟨y, z, yfU, zgU, xhyz⟩ := (Ch (f U) (g U) x).mp xhfUgU
+      obtain ⟨u, uU, yfu⟩ := continuous_finite (toList y) U Cf yfU
+      obtain ⟨v, vU, zgv⟩ := continuous_finite (toList z) U Cg zgU
+      use (fromList (toList u ++ toList v))
+      rw [eq_toSet_fromList]
+      constructor
+      · intro w wuv
+        cases (List.mem_append.mp wuv)
+        case inl wu => exact uU wu
+        case inr wv => exact vU wv
+      · apply continuous₂_monotone₂ Ch (f (toSet u)) _ (g (toSet v)) _
+        unfold toSet
+        · apply continuous_monotone Cf
+          intro ; apply List.mem_append_left _
+        · apply continuous_monotone Cg
+          intro ; apply List.mem_append_right _
+        · exact continuous₂_monotone₂ Ch _ _ _ _ yfu zgv xhyz
+    · rintro ⟨y, yU, xhfygy⟩
+      have fyfU : f (toSet y) ⊆ f U := continuous_monotone Cf _ _ yU
+      have gygU : g (toSet y) ⊆ g U := continuous_monotone Cg _ _ yU
+      exact continuous₂_monotone₂ Ch _ _ _ _ fyfU gygU xhfygy
 
   /-- The graph of a function -/
   def graph (f : Set α → Set α) : Set α :=
     fun x => fst x ∈ f (toSet (snd x))
 
-  def isContinuous.binary (f : Set α → Set α → Set α) :
-    (∀ S, isContinuous (f S)) →
-    (∀ T, isContinuous (fun S => f S T)) →
-    isContinuous (fun S => graph (f S)) := by
-    intro fC₁ fC₂ S x
+  /-- Currying combined with graph is continuous -/
+  def continuous_graph (f : Set α → Set α → Set α) :
+    continuous₂ f → continuous (fun S => graph (f S)) := by
+    intro fC S x
+    have fC₁ := continuous₂_fst f fC
+    have fC₂ := continuous₂_snd f fC
     constructor
     · exact (fC₂ (toSet (snd x)) S (fst x)).mp
     · intro ⟨y, yS, H⟩
@@ -157,34 +274,35 @@ section GraphModel
       use (snd x)
       constructor
       · trivial
-      · exact isContinuous_monotone (fC₂ (toSet (snd x))) _ _ yS H
+      · exact continuous_monotone (fC₂ (toSet (snd x))) _ _ yS H
 
+  /-- Combinatory application on the graph model -/
   def apply (S : Set α) : Set α → Set α :=
     fun T x => ∃ y, toSet y ⊆ T ∧ pair x y ∈ S
 
   @[reducible]
   instance Listing.hasDot : HasDot (Set α) where dot := apply
 
-  def apply_monotone₁ {S T U : Set α} : S ⊆ T → apply S U ⊆ apply T U := by
-    rintro ST U ⟨y, yU, xyS⟩
+  /-- Application is monotone. -/
+  theorem apply.monotone₂ : monotone₂ (@apply α _) := by
+    rintro S S' T T' SS' TT' x ⟨y, yT, yzS⟩
     use y
     constructor
-    · assumption
-    · exact ST xyS
+    · intro w wy ; exact TT' (yT wy)
+    · exact SS' yzS
 
-  def apply_monotone₂ {S T U : Set α} : S ⊆ T → apply U S ⊆ apply U T := by
-    rintro ST x ⟨y, yS, xyU⟩
-    use y
-    constructor
-    · intro z ; exact fun a ↦ ST (yS a)
-    · assumption
+  /-- Application is monotone in the first argument. -/
+  theorem apply.monotone_fst {T : Set α} : monotone (fun S => apply S T) := by
+    intro S S' SS'
+    apply apply.monotone₂ _ _ _ _ SS' (fun ⦃_⦄ a => a)
 
-  def apply_monotone {S T U V : Set α} : S ⊆ T → U ⊆ V → apply S U ⊆ apply T V := by
-    intro ST UV x xSU
-    apply apply_monotone₁ ST
-    apply apply_monotone₂ UV xSU
+  /-- Application is monotone in the second argument. -/
+  theorem apply.monotone_snd {S : Set α} : monotone (apply S) := by
+    intro T T' TT'
+    apply apply.monotone₂ _ _ _ _ (fun ⦃_⦄ a => a) TT'
 
-  def isContinuous.apply (T : Set α) : isContinuous (apply T) := by
+  /-- Application is continuous in the first argument. -/
+  theorem apply.continuous_fst (T : Set α) : continuous (apply T) := by
     intros S x
     constructor
     · rintro ⟨y, yS, xyT⟩
@@ -193,9 +311,38 @@ section GraphModel
       · assumption
       · use y
     · rintro ⟨y, yS, xTy⟩
-      apply apply_monotone₂ yS xTy
+      apply apply.monotone_snd _ _ yS xTy
 
-  theorem eq_apply_graph (f : Set α → Set α) : isContinuous f → apply (graph f) = f := by
+  /-- Application is continuous in the second argument. -/
+  theorem apply.continuous_snd (S : Set α) : continuous (fun T => apply T S) := by
+    intros T x
+    constructor
+    · rintro ⟨y, yS, xyT⟩
+      use (fromList [pair x y])
+      constructor
+      · rw [eq_toSet_fromList]
+        intro z zxy
+        cases zxy
+        case head => assumption
+        case tail H => cases H
+      · use y
+        constructor
+        · assumption
+        · rw [eq_toSet_fromList] ; constructor
+    · rintro ⟨y, yT, z, zS, xyz⟩
+      unfold apply
+      use z
+      constructor
+      · assumption
+      · exact yT xyz
+
+  /-- Application is continuous. -/
+  theorem apply.continuous₂ : continuous₂ (@apply α _) := by
+    apply continuous₂_separately
+    · apply apply.continuous_fst
+    · apply apply.continuous_snd
+
+  theorem eq_apply_graph (f : Set α → Set α) : continuous f → apply (graph f) = f := by
     intro Cf
     ext S x
     constructor
@@ -221,20 +368,50 @@ section GraphModel
   theorem eq_K {A B : Set α} : K ⬝ A ⬝ B = A := by
     simp [K, Listing.hasDot]
     rw [eq_apply_graph, eq_apply_graph]
-    · apply isContinuous.const
-    · apply isContinuous.binary
-      · exact isContinuous.const
-      · intro
-        exact isContinuous.id
+    · apply continuous_const
+    · apply continuous_graph
+      apply continuous₂_separately
+      · apply continuous_const
+      · intro ; apply continuous_id
 
   def S : Set α := graph (fun A => graph (fun B => graph (fun C => (A ⬝ C) ⬝ (B ⬝ C))))
+
+  lemma S.continuous₁ {B C : Set α} : continuous (fun A => (A ⬝ C) ⬝ (B ⬝ C)) := by
+    apply continuous₂_compose (fun A => A ⬝ C) (fun _ => B ⬝ C)
+    · apply apply.continuous_snd
+    · apply continuous_const
+    · apply apply.continuous₂
+
+  lemma S.continuous₂ {A C : Set α} : continuous (fun B => (A ⬝ C) ⬝ (B ⬝ C)) := by
+    apply continuous₂_compose (fun _ => A ⬝ C) (fun B => B ⬝ C)
+    · apply continuous_const
+    · apply apply.continuous_snd
+    · apply apply.continuous₂
+
+  lemma S.continuous₃ {A B : Set α} : continuous (fun C => (A ⬝ C) ⬝ (B ⬝ C)) := by
+    apply continuous₂_compose (apply A) (apply B) apply
+    · apply apply.continuous_fst
+    · apply apply.continuous_fst
+    · apply apply.continuous₂
 
   theorem eq_S {A B C : Set α} : S ⬝ A ⬝ B ⬝ C = (A ⬝ C) ⬝ (B ⬝ C) := by
     simp [S, Listing.hasDot]
     rw [eq_apply_graph, eq_apply_graph, eq_apply_graph]
-    · sorry
-    · sorry
-    · sorry
+    · apply S.continuous₃
+    · apply continuous_graph
+      apply continuous₂_separately
+      · apply S.continuous₃
+      · apply S.continuous₂
+    · apply continuous_graph
+      apply continuous₂_separately
+      · intro ; apply continuous_graph
+        apply continuous₂_separately
+        · apply S.continuous₃
+        · apply S.continuous₂
+      · intro ; apply continuous_graph
+        apply continuous₂_separately
+        · intro ; apply S.continuous₃
+        · intro ; apply S.continuous₁
 
   /-- The graph model -/
   instance isCA : CA (Set α) where

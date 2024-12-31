@@ -43,7 +43,7 @@ theorem Listing.eq_fst_pair {α : Type} [Listing α] (x y : α) : fst (pair x y)
 theorem Listing.eq_snd_pair {α : Type} [Listing α] (x y : α) : snd (pair x y) = y
   := by simp [fst, snd, pair, eq_list]
 
-section GraphModel
+namespace GraphModel
 
   variable {α : Type} [Listing α]
   open Listing

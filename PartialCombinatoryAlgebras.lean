@@ -6,3 +6,4 @@ import PartialCombinatoryAlgebras.PartialCombinatoryAlgebra
 import PartialCombinatoryAlgebras.Programming
 import PartialCombinatoryAlgebras.CombinatoryAlgebra
 import PartialCombinatoryAlgebras.FreeCombinatoryAlgebra
+import PartialCombinatoryAlgebras.GraphModel

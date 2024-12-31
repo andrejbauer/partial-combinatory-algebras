@@ -355,34 +355,42 @@ We call the elements of~$A$ accomplishing various programming tasks \emph{combin
   The \emph{free combinatory algebra} is generated freely by the symbols $\combK$ and $\combS$ and formal binary application, quotiented by provable equality.
 \end{definition}
 
-\subsection{$C$-monoids}
-\label{sec:c-monoids}
-
-We approach $\lambda$-models using the notion of a $C$-monoid, as defined by Lambek and Scott.
+\subsection{The graph model}
+\label{sec:graph-model}
 
 \begin{definition}
-  \label{def:C-monoid}
-  %
-  A \emph{$C$-monoid} is a monoid $(C, {\cdot}, 1)$ with elements $\pi_1, \pi_2, \varepsilon \in C$,
-  a binary operation $\pair{{-},{-}} : C \times C \to C$ and unary operation ${-}^* : C \to C$
-  satisfying the following equations:
-  %
-  \begin{align}
-    \pi_1 \pair{x, y} &= a, \\
-    \pi_2 \pair{x, y} &= b, \\
-    \pair{\pi_1 \, c, \pi_2 \, c} &= c, \\
-    \varepsilon \pair{h^* \, \pi_1, \pi_2} &= h, \\
-    (\varepsilon \pair{k \, \pi_1, \pi_2})^* &= k.
-  \end{align}
+  \label{def:Listing}
+  \lean{Listing}
+  \leanok
+  A \emph{listing} on a set $A$ is a section $\mathsf{fromList} : \mathsf{List}\,A \to A$ and a retraction $\mathsf{toList} : A \to \mathsf{List}\,A$.
 \end{definition}
 
+Suppose $A$ is a set with a listing. It induces a pairing on $A$: $\pair{x, y} = \mathsf{fromList}\,[x,y]$ with corresponding projections. Each $x \in A$ may be seen as a finite subset of $A$,
+%
+\begin{equation*}
+  \mathsf{toSet}\,x = \set{y \such y \in \mathsf{toList}\,x}.
+\end{equation*}
 
+
+\begin{definition}
+  \label{def:graph-model-application}
+  \uses{def:Listing}
+  \lean{GraphModel.apply}
+  \leanok
+  The \emph{application} ${-} \cdot {-} : \pow{A} \times \pow{A} \to \pow{A}$ is defined by
+  %
+  \begin{equation*}
+    S \cdot T = \set{x \in A \such \some{y \in A} \mathsf{toSet}\,y \subseteq T \land \pair{x,y} \in S}.
+  \end{equation*}
+\end{definition}
 
 \begin{theorem}
-  \label{def:C-monoid-is-PCA}
-  A $C$-monoid induces the structure of a combinatory algebra.
+  \label{thm:graph-model}
+  \uses{def:graph-model-application, def:CA}
+  \lean{GraphModel.isCA}
+  \leanok
+  The set $\pow{A}$ with the application as above is a combinatory algebra.
 \end{theorem}
-
 
 
 %%% Local Variables:

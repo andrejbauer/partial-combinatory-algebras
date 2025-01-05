@@ -31,43 +31,87 @@ theorem app_partrec₂ : Partrec₂ app := by
 instance partialApplication: PartialApplication ℕ where
   app u v := u.bind (fun m => v.bind (fun n => app m n))
 
-theorem K_part : Partrec (Part.some ∘ Code.encodeCode ∘ Code.const) := by
-  apply Computable.comp
-  · apply Computable.comp (f := Code.encodeCode)
-    · apply Computable.encode
-    · exact Code.const_prim.to_comp
-  · exact Computable.id
-
 lemma eq_ofNat_encodeCode (c : Code) : Denumerable.ofNat Code c.encodeCode = c := by
   rw [Code.ofNatCode_eq]
   induction c <;> simp [Code.encodeCode, Code.ofNatCode, Nat.div2_val, *]
 
-theorem K_exists : ∃ k : ℕ, ∀ (u v : Part ℕ), u ⇓ → v ⇓ → .some k ⬝ u ⬝ v = u := by
-  obtain ⟨c, evalc⟩ := Code.exists_code.mp K_part
+@[reducible]
+def K_map : ℕ → ℕ := Code.encodeCode ∘ Code.const
+
+theorem K_part : Computable K_map := by
+  apply Computable.comp (f := Code.encodeCode)
+  · apply Computable.encode
+  · exact Code.const_prim.to_comp
+
+noncomputable def K := (Code.exists_code.mp K_part).choose
+
+theorem K_spec : K.eval = fun n => .some (Code.encodeCode (Code.const n)) := by
+  rw [K, (Code.exists_code.mp K_part).choose_spec]
+  funext n
+  simp
+
+/-- Partially recursive partial functions `α → β → σ` between `Primcodable` types -/
+def Partrec₃ {α β γ σ : Type} [Primcodable α] [Primcodable β] [Primcodable γ] [Primcodable σ] (f : α → β → γ →. σ) :=
+  Partrec fun p : α × β × γ => f p.1 p.2.1 p.2.2
+
+theorem S_exists : ∃ s : ℕ, ∀ (u v w : Part ℕ), u ⇓ → v ⇓ → w ⇓ → .some s ⬝ u ⬝ v ⬝ w = (u ⬝ w) ⬝ (v ⬝ w) := by
+  let S (x y z : ℕ) : Part ℕ := (x ⬝ z) ⬝ (y ⬝ z)
+  have S_part : Partrec₃ S := by
+    simp [S, HasDot.dot, PartialApplication.app]
+    apply Partrec.bind
+    · apply Partrec₂.comp
+      · exact Code.eval_part
+      · apply Computable.comp (Computable.ofNat Code) Computable.fst
+      · apply Computable.comp Computable.snd Computable.snd
+    · apply Partrec.bind
+      · apply Partrec₂.comp
+        · exact Code.eval_part
+        · apply Computable.comp (Computable.ofNat Code)
+          · apply Computable.comp
+            · exact Computable.fst
+            · apply Computable.comp Computable.snd Computable.fst
+        · apply Computable.comp Computable.snd (Computable.comp Computable.snd Computable.fst)
+      · apply Partrec₂.comp Code.eval_part
+        · apply Computable.comp (Computable.ofNat Code) (Computable.comp Computable.snd Computable.fst)
+        · exact Computable.snd
+  obtain ⟨c, evalc⟩ := Code.exists_code.mp S_part
   use c.encodeCode
-  rintro u v hu hv
-  simp [HasDot.dot, PartialApplication.app, app, eq_ofNat_encodeCode, evalc]
+  intros u v w hu hv hw
+  simp [S, HasDot.dot, PartialApplication.app, app, eq_ofNat_encodeCode, evalc]
   rw [← Part.some_get hu]
   simp only [Part.bind_some]
   rw [← Part.some_get hv]
-  simp only [Part.bind_some, eq_ofNat_encodeCode]
-  simp
-
-theorem S_exists : ∃ s : ℕ, ∀ (u v w : Part ℕ), u ⇓ → v ⇓ → w ⇓ → .some s ⬝ u ⬝ v ⬝ w = (u ⬝ w) ⬝ (v ⬝ w) := by
+  simp only [Part.bind_some]
+  rw [← Part.some_get hw]
+  simp only [Part.bind_some]
   sorry
 
 noncomputable instance isPCA : PCA ℕ where
-  K := .some K_exists.choose
+  K := .some K.encodeCode
   S := .some S_exists.choose
 
-  df_K₀ := trivial
-  df_K₁ := sorry
+  df_K₀ := by trivial
+
+  df_K₁ := by
+    intro u hu
+    simp [HasDot.dot, PartialApplication.app, hu, eq_ofNat_encodeCode, K_spec]
 
   df_S₀ := trivial
+
   df_S₁ := sorry
+
   df_S₂ := sorry
 
-  eq_K := K_exists.choose_spec
+  eq_K := by
+    intro u v hu hv
+    simp [HasDot.dot, PartialApplication.app, app, eq_ofNat_encodeCode, K_spec]
+    rw [← Part.some_get hu]
+    simp only [Part.bind_some]
+    rw [← Part.some_get hv]
+    simp only [Part.bind_some, eq_ofNat_encodeCode]
+    simp
+
+
   eq_S := S_exists.choose_spec
 
 

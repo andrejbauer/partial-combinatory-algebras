@@ -54,27 +54,28 @@ theorem K_spec : K.eval = fun n => .some (Code.encodeCode (Code.const n)) := by
 def Partrec₃ {α β γ σ : Type} [Primcodable α] [Primcodable β] [Primcodable γ] [Primcodable σ] (f : α → β → γ →. σ) :=
   Partrec fun p : α × β × γ => f p.1 p.2.1 p.2.2
 
+theorem Computable₂.Computable {α β σ : Type} [Primcodable α] [Primcodable β] [Primcodable σ] {f : α → β → σ} :
+  Computable₂ f → ∀ {a : α}, Computable (f a) :=
+  fun fc a => Computable₂.comp fc (Computable.const a) (Computable.id)
+
 theorem S_exists : ∃ s : ℕ, ∀ (u v w : Part ℕ), u ⇓ → v ⇓ → w ⇓ → .some s ⬝ u ⬝ v ⬝ w = (u ⬝ w) ⬝ (v ⬝ w) := by
-  let S (x y z : ℕ) : Part ℕ := (x ⬝ z) ⬝ (y ⬝ z)
-  have S_part : Partrec₃ S := by
+  let S : ℕ × ℕ × ℕ →. ℕ := fun (x, y, z) => (x ⬝ z) ⬝ (y ⬝ z)
+  have S_part : Partrec S := by
+    open Computable in
     simp [S, HasDot.dot, PartialApplication.app]
     apply Partrec.bind
-    · apply Partrec₂.comp
-      · exact Code.eval_part
-      · apply Computable.comp (Computable.ofNat Code) Computable.fst
-      · apply Computable.comp Computable.snd Computable.snd
+    · exact Partrec₂.comp Code.eval_part (Computable.comp (Computable.ofNat Code) fst) (Computable.comp snd snd)
     · apply Partrec.bind
       · apply Partrec₂.comp
         · exact Code.eval_part
         · apply Computable.comp (Computable.ofNat Code)
-          · apply Computable.comp
-            · exact Computable.fst
-            · apply Computable.comp Computable.snd Computable.fst
-        · apply Computable.comp Computable.snd (Computable.comp Computable.snd Computable.fst)
+          · exact Computable.comp fst (Computable.comp snd fst)
+        · apply comp snd (comp snd fst)
       · apply Partrec₂.comp Code.eval_part
-        · apply Computable.comp (Computable.ofNat Code) (Computable.comp Computable.snd Computable.fst)
-        · exact Computable.snd
+        · apply comp (Computable.ofNat Code) (comp snd fst)
+        · exact snd
   obtain ⟨c, evalc⟩ := Code.exists_code.mp S_part
+  have d := Code.curry_prim (Code.curry c)
   use c.encodeCode
   intros u v w hu hv hw
   simp [S, HasDot.dot, PartialApplication.app, app, eq_ofNat_encodeCode, evalc]
